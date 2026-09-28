@@ -1,0 +1,71 @@
+{
+  "apiName": "home",
+  "hero": {
+    "greeting": "Hello, I'm",
+    "name": "[Your Name]",
+    "tagline": "Building delightful & impactful web experiences.",
+    "bio": "I'm a passionate software engineer who loves building delightful and impactful web experiences. Let's create something amazing together!",
+    "avatar": {
+      "src": "/placeholder.svg?height=180&width=180",
+      "alt": "Profile Picture"
+    }
+  },
+  "ctaButtons": [
+    {
+      "label": "Say Hello!",
+      "href": "mailto:john.doe@example.com",
+      "variant": "primary",
+      "icon": "mail"
+    },
+    {
+      "label": "My GitHub",
+      "href": "https://github.com/your-github",
+      "variant": "outline",
+      "icon": "github"
+    }
+  ],
+  "techStack": [
+    { "name": "React", "icon": "atom", "colorClass": "bg-blue-500" },
+    { "name": "Next.js", "icon": "zap", "colorClass": "bg-gray-700" },
+    { "name": "TypeScript", "icon": "type", "colorClass": "bg-blue-400" },
+    { "name": "Node.js", "icon": "leaf", "colorClass": "bg-green-500" },
+    { "name": "Express.js", "icon": "flaskConical", "colorClass": "bg-purple-500" },
+    { "name": "Python", "icon": "code", "colorClass": "bg-yellow-500" },
+    { "name": "Django", "icon": "gitFork", "colorClass": "bg-green-700" },
+    { "name": "PostgreSQL", "icon": "database", "colorClass": "bg-blue-700" },
+    { "name": "MongoDB", "icon": "circleDot", "colorClass": "bg-green-800" },
+    { "name": "Docker", "icon": "container", "colorClass": "bg-blue-600" },
+    { "name": "AWS", "icon": "cloud", "colorClass": "bg-orange-500" },
+    { "name": "Tailwind CSS", "icon": "palette", "colorClass": "bg-cyan-500" },
+    { "name": "GraphQL", "icon": "barChart", "colorClass": "bg-pink-500" },
+    { "name": "Framer Motion", "icon": "rocket", "colorClass": "bg-indigo-500" }
+  ],
+  "socialCards": [
+    {
+      "title": "LinkedIn",
+      "description": "Connect with me professionally on LinkedIn.",
+      "href": "https://linkedin.com/in/your-linkedin",
+      "ctaLabel": "Connect on LinkedIn",
+      "theme": "blue",
+      "icon": "linkedin"
+    },
+    {
+      "title": "GitHub",
+      "description": "Explore my open-source projects and contributions.",
+      "href": "https://github.com/your-github",
+      "ctaLabel": "View My GitHub",
+      "theme": "neutral",
+      "icon": "github"
+    },
+    {
+      "title": "Download CV",
+      "description": "Get a detailed overview of my professional journey.",
+      "href": "/your-cv.pdf",
+      "ctaLabel": "Download My CV",
+      "theme": "primary",
+      "icon": "fileText",
+      "download": true
+    }
+  ]
+}
+

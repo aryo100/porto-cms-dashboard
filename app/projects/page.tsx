@@ -1,32 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { PageHeader } from "@/components/common/page-header"
+import { StatCard } from "@/components/common/stat-card"
+import { SearchInput } from "@/components/common/search-input"
+import { FilterDropdown } from "@/components/common/filter-dropdown"
+import { RowActions } from "@/components/common/row-actions"
+import { StatusBadge } from "@/components/common/status-badge"
+import { IconLink } from "@/components/common/icon-link"
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog"
 import { ProjectFormDialog } from "@/components/projects/project-form-dialog"
-import { DeleteProjectDialog } from "@/components/projects/delete-project-dialog"
 import { useCMSStore } from "@/lib/store"
 import {
   Plus,
-  Search,
-  Filter,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Eye,
+  ArrowUpDown,
   Calendar,
   FolderOpen,
   TrendingUp,
-  Users,
-  DollarSign,
+  Clock,
   ExternalLink,
   Github,
-  Star,
 } from "lucide-react"
 
 interface Project {
@@ -36,20 +34,16 @@ interface Project {
   status: string
   category: string
   technologies: string[]
-  featured: boolean
-  progress: number
   createdAt: string
   image: string
   githubUrl: string
   liveUrl: string | null
   tags: string[]
-  budget: number
-  priority: string
 }
 
 const categories = ["All", "Web Development", "Mobile App", "Desktop App", "API", "Other"]
-const statusOptions = ["All", "Planning", "In Progress", "Completed", "On Hold", "Cancelled"]
-const priorityOptions = ["All", "Low", "Medium", "High", "Critical"]
+const statusOptions = ["All", "Completed", "Upcoming", "Legacy"]
+const sortOptions = ["Newest", "Oldest", "Title A-Z", "Title Z-A"]
 
 export default function ProjectsPage() {
   const { projects, addProject, updateProject, deleteProject } = useCMSStore()
@@ -57,35 +51,84 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedStatus, setSelectedStatus] = useState("All")
-  const [selectedPriority, setSelectedPriority] = useState("All")
+  const [sortOption, setSortOption] = useState("Newest")
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<any>(undefined)
+  const [focusedId, setFocusedId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get("q")
+    if (q) setSearchTerm(q)
+    if (params.get("new") === "project") {
+      setEditingProject(undefined)
+      setIsFormOpen(true)
+    }
+    const focus = params.get("focus")
+    if (focus) setFocusedId(Number(focus))
+  }, [])
+
+  useEffect(() => {
+    if (focusedId !== null) {
+      document.getElementById(`project-row-${focusedId}`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [focusedId])
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; project: any | null }>({
     open: false,
     project: null,
   })
+  const [expandedTech, setExpandedTech] = useState<Set<number>>(new Set())
+
+  const toggleTech = (id: number) => {
+    setExpandedTech((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const filteredProjects = (projects || []).filter((project) => {
-    const matchesSearch =
-      project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (project.tags || []).some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    const q = searchTerm.toLowerCase()
+    const matchesSearch = q
+      ? [
+          project.title,
+          project.description,
+          project.category,
+          project.status,
+          project.client,
+          ...(project.tags ?? []),
+          ...(project.technologies ?? []),
+        ].some((field) => field?.toLowerCase().includes(q))
+      : true
     const matchesCategory = selectedCategory === "All" || project.category === selectedCategory
     const matchesStatus = selectedStatus === "All" || project.status === selectedStatus
-    const matchesPriority = selectedPriority === "All" || project.priority === selectedPriority
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesPriority
+    return matchesSearch && matchesCategory && matchesStatus
   })
 
-  const totalBudget = (projects || []).reduce((sum, project) => sum + (project.budget || 0), 0)
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    switch (sortOption) {
+      case "Oldest":
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      case "Title A-Z":
+        return a.title.localeCompare(b.title)
+      case "Title Z-A":
+        return b.title.localeCompare(a.title)
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    }
+  })
+
   const completedProjects = (projects || []).filter((project) => project.status === "Completed")
-  const inProgressProjects = (projects || []).filter((project) => project.status === "In Progress")
+  const upcomingProjects = (projects || []).filter((project) => project.status === "Upcoming")
 
   const handleSaveProject = (projectData: any) => {
+    const { techStack, ...data } = projectData
     if (editingProject) {
-      updateProject(editingProject.id, projectData)
+      updateProject(editingProject.id, data)
     } else {
-      addProject(projectData)
+      addProject(data)
     }
     setEditingProject(undefined)
   }
@@ -114,129 +157,58 @@ export default function ProjectsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-            <p className="text-muted-foreground">Manage your portfolio projects and track their progress</p>
-          </div>
+        <PageHeader title="Projects" description="Manage your portfolio projects and track their progress">
           <Button className="gap-2" onClick={handleAddProject}>
             <Plus className="h-4 w-4" />
             New Project
           </Button>
+        </PageHeader>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Total Projects"
+            value={(projects || []).length}
+            footer={
+              <>
+                <span className="text-primary font-medium">+2</span>
+                {" from last month"}
+              </>
+            }
+            icon={FolderOpen}
+          />
+          <StatCard title="Completed" value={completedProjects.length} footer="Successfully delivered" icon={TrendingUp} />
+          <StatCard title="Upcoming" value={upcomingProjects.length} footer="Upcoming work" icon={Clock} />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{(projects || []).length}</div>
-              <p className="text-xs text-muted-foreground">+2 from last month</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{completedProjects.length}</div>
-              <p className="text-xs text-muted-foreground">Successfully delivered</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{inProgressProjects.length}</div>
-              <p className="text-xs text-muted-foreground">Active projects</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Budget</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${totalBudget.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Project value</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters and Search */}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search projects..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full sm:w-80"
-                  />
-                </div>
+              <SearchInput
+                placeholder="Search projects..."
+                value={searchTerm}
+                onChange={setSearchTerm}
+              />
 
-                <div className="flex gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="gap-2 bg-transparent">
-                        <Filter className="h-4 w-4" />
-                        Category: {selectedCategory}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {categories.map((category) => (
-                        <DropdownMenuItem key={category} onClick={() => setSelectedCategory(category)}>
-                          {category}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="gap-2 bg-transparent">
-                        <Filter className="h-4 w-4" />
-                        Status: {selectedStatus}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {statusOptions.map((status) => (
-                        <DropdownMenuItem key={status} onClick={() => setSelectedStatus(status)}>
-                          {status}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="gap-2 bg-transparent">
-                        <Filter className="h-4 w-4" />
-                        Priority: {selectedPriority}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {priorityOptions.map((priority) => (
-                        <DropdownMenuItem key={priority} onClick={() => setSelectedPriority(priority)}>
-                          {priority}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+              <div className="flex flex-wrap gap-2 sm:justify-end">
+                <FilterDropdown
+                  label="Category"
+                  options={categories}
+                  value={selectedCategory}
+                  onChange={setSelectedCategory}
+                />
+                <FilterDropdown
+                  label="Status"
+                  options={statusOptions}
+                  value={selectedStatus}
+                  onChange={setSelectedStatus}
+                />
+                <FilterDropdown
+                  label="Sort"
+                  options={sortOptions}
+                  value={sortOption}
+                  onChange={setSortOption}
+                  icon={ArrowUpDown}
+                />
               </div>
             </div>
           </CardHeader>
@@ -249,23 +221,25 @@ export default function ProjectsPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Tech Stack</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Progress</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProjects.map((project) => (
-                  <TableRow key={project.id} className="h-16">
+                {sortedProjects.map((project) => (
+                  <TableRow
+                    key={project.id}
+                    id={`project-row-${project.id}`}
+                    className={`h-16 ${focusedId === project.id ? "bg-primary/10" : ""}`}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-16 rounded-md bg-muted flex items-center justify-center">
-                          <FolderOpen className="h-6 w-6 text-muted-foreground" />
+                        <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted">
+                          <FolderOpen className="h-6 w-6 text-primary" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-foreground truncate">{project.title}</p>
-                            {project.featured && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
                           </div>
                           <p className="text-sm text-muted-foreground truncate">{project.description}</p>
                         </div>
@@ -276,78 +250,45 @@ export default function ProjectsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {(project.technologies || []).slice(0, 2).map((tech) => (
-                          <Badge key={tech} variant="outline" className="text-xs">
-                            {tech}
-                          </Badge>
-                        ))}
+                        {(project.technologies || [])
+                          .slice(0, expandedTech.has(project.id) ? undefined : 2)
+                          .map((tech) => (
+                            <Badge key={tech} variant="outline" className="text-xs">
+                              {tech}
+                            </Badge>
+                          ))}
                         {(project.technologies || []).length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{(project.technologies || []).length - 2}
-                          </Badge>
+                          <button
+                            type="button"
+                            onClick={() => toggleTech(project.id)}
+                            className="cursor-pointer rounded-md border px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+                          >
+                            {expandedTech.has(project.id)
+                              ? "− less"
+                              : `+${(project.technologies || []).length - 2} more`}
+                          </button>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={project.status === "Completed" ? "default" : "secondary"}>{project.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${project.progress || 0}%` }}
-                          />
-                        </div>
-                        <span className="text-xs">{project.progress || 0}%</span>
-                      </div>
+                      <StatusBadge value={project.status} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(project.createdAt).toLocaleDateString()}
+                        {new Date(project.createdAt).toLocaleDateString("en-US")}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {project.githubUrl && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
-                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
-                              <Github className="h-4 w-4" />
-                            </a>
-                          </Button>
-                        )}
+                        {project.githubUrl && <IconLink href={project.githubUrl} icon={Github} label="GitHub" />}
                         {project.liveUrl && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
-                            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
+                          <IconLink href={project.liveUrl} icon={ExternalLink} label="Live site" />
                         )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2">
-                              <Eye className="h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2" onClick={() => handleEditProject(project)}>
-                              <Edit className="h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2 text-destructive"
-                              onClick={() => handleDeleteProject(project)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <RowActions
+                          onEdit={() => handleEditProject(project)}
+                          onDelete={() => handleDeleteProject(project)}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -364,10 +305,16 @@ export default function ProjectsPage() {
           onSave={handleSaveProject}
         />
 
-        <DeleteProjectDialog
+        <ConfirmDeleteDialog
           open={deleteDialog.open}
           onOpenChange={(open) => setDeleteDialog({ open, project: null })}
-          projectTitle={deleteDialog.project?.title || ""}
+          title="Delete Project"
+          description={
+            <>
+              Are you sure you want to delete "{deleteDialog.project?.title || ""}"? This action cannot be undone.
+            </>
+          }
+          confirmLabel="Delete Project"
           onConfirm={confirmDelete}
         />
       </div>

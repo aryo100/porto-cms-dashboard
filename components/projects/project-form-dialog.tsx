@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
+import { SkillMultiSelect } from "@/components/common/skill-multi-select"
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { X, Plus } from "lucide-react"
+import { useCMSStore } from "@/lib/store"
+import { Loader2, ImagePlus, Trash2, RefreshCw } from "lucide-react"
 
 interface Project {
   id?: number
@@ -27,7 +27,7 @@ interface Project {
   status: string
   category: string
   techStack: string[]
-  featured: boolean
+  technologies?: string[]
   githubUrl: string
   liveUrl: string
   image: string
@@ -44,39 +44,42 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
   const [formData, setFormData] = useState<Project>({
     title: project?.title || "",
     description: project?.description || "",
-    status: project?.status || "Draft",
+    status: project?.status || "Completed",
     category: project?.category || "Web App",
-    techStack: project?.techStack || [],
-    featured: project?.featured || false,
+    techStack: project?.techStack ?? project?.technologies ?? [],
     githubUrl: project?.githubUrl || "",
     liveUrl: project?.liveUrl || "",
     image: project?.image || "",
     ...project,
   })
 
-  const [newTech, setNewTech] = useState("")
+  const [loading, setLoading] = useState(false)
+  const skills = useCMSStore((state) => state.skills)
+  const skillNames = skills.map((skill) => skill.name)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+    setLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    onSave({ ...formData, technologies: formData.techStack })
     onOpenChange(false)
+    setLoading(false)
   }
 
-  const addTechStack = () => {
-    if (newTech.trim() && !formData.techStack.includes(newTech.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        techStack: [...prev.techStack, newTech.trim()],
-      }))
-      setNewTech("")
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setFormData((prev) => ({ ...prev, image: reader.result as string }))
     }
+    reader.readAsDataURL(file)
+    e.target.value = ""
   }
 
-  const removeTechStack = (tech: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      techStack: prev.techStack.filter((t) => t !== tech),
-    }))
+  const updateTechStack = (tags: string[]) => {
+    setFormData((prev) => ({ ...prev, techStack: tags }))
   }
 
   return (
@@ -144,47 +147,53 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Published">Published</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Upcoming">Upcoming</SelectItem>
+                  <SelectItem value="Legacy">Legacy</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image">Project Image URL</Label>
-              <Input
-                id="image"
-                value={formData.image}
-                onChange={(e) => setFormData((prev) => ({ ...prev, image: e.target.value }))}
-                placeholder="https://example.com/image.jpg"
-              />
+              <Label>Project Image</Label>
+              <div className="flex items-end gap-4">
+                <label className="group relative flex h-32 w-44 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-md border border-dashed bg-muted/50 text-muted-foreground transition-colors hover:bg-accent">
+                  {formData.image ? (
+                    <>
+                      <img src={formData.image} alt="Project preview" className="absolute inset-0 h-full w-full object-cover" />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-opacity group-hover:bg-black/40 group-hover:opacity-100">
+                        <RefreshCw className="h-5 w-5" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="h-6 w-6" />
+                      <span className="text-sm">Upload Image</span>
+                    </>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+                {formData.image && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Tech Stack</Label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={newTech}
-                onChange={(e) => setNewTech(e.target.value)}
-                placeholder="Add technology"
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTechStack())}
-              />
-              <Button type="button" onClick={addTechStack} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.techStack.map((tech) => (
-                <Badge key={tech} variant="secondary" className="gap-1">
-                  {tech}
-                  <button type="button" onClick={() => removeTechStack(tech)} className="ml-1 hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <SkillMultiSelect
+            label="Tech Stack"
+            value={formData.techStack}
+            onChange={updateTechStack}
+            options={skillNames}
+            placeholder="Select technologies from your skills"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -208,20 +217,14 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="featured"
-              checked={formData.featured}
-              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, featured: checked }))}
-            />
-            <Label htmlFor="featured">Featured Project (show on homepage)</Label>
-          </div>
-
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{project ? "Update Project" : "Create Project"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {project ? "Update Project" : "Create Project"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

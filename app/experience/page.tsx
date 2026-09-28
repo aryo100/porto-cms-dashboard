@@ -1,26 +1,28 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { PageHeader } from "@/components/common/page-header"
+import { StatCard } from "@/components/common/stat-card"
+import { SearchInput } from "@/components/common/search-input"
+import { FilterDropdown } from "@/components/common/filter-dropdown"
+import { RowActions } from "@/components/common/row-actions"
+import { IconLink } from "@/components/common/icon-link"
+import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog"
 import { WorkExperienceDialog } from "@/components/experience/work-experience-dialog"
 import { EducationDialog } from "@/components/experience/education-dialog"
 import { SkillDialog } from "@/components/experience/skill-dialog"
 import { AchievementDialog } from "@/components/experience/achievement-dialog"
 import { useCMSStore } from "@/lib/store"
+import { jsPDF } from "jspdf"
 import {
   Plus,
-  Search,
-  MoreHorizontal,
-  Edit,
-  Trash2,
   Briefcase,
   GraduationCap,
   Award,
@@ -29,9 +31,13 @@ import {
   MapPin,
   Building,
   Star,
+  ExternalLink,
+  Download,
 } from "lucide-react"
 
 const skillCategories = ["All", "Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database"]
+
+type DeleteTarget = { type: "work" | "education" | "skill" | "achievement"; id: number; title: string }
 
 export default function ExperiencePage() {
   const {
@@ -59,6 +65,33 @@ export default function ExperiencePage() {
   const [educationDialog, setEducationDialog] = useState<{ open: boolean; education?: any }>({ open: false })
   const [skillDialog, setSkillDialog] = useState<{ open: boolean; skill?: any }>({ open: false })
   const [achievementDialog, setAchievementDialog] = useState<{ open: boolean; achievement?: any }>({ open: false })
+  const [activeTab, setActiveTab] = useState("work")
+  const [focused, setFocused] = useState<
+    { type: "work" | "education" | "skills" | "achievement"; id: number } | null
+  >(null)
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("new") === "certificate") {
+      setAchievementDialog({ open: true })
+      setActiveTab("achievements")
+    }
+    const focus = params.get("focus")
+    const type = params.get("type")
+    if (focus && (type === "work" || type === "education" || type === "skills" || type === "achievement")) {
+      setFocused({ type, id: Number(focus) })
+      setActiveTab(type === "achievement" ? "achievements" : type)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (focused) {
+      document
+        .getElementById(`focus-${focused.type}-${focused.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [focused])
 
   const filteredSkills = skills.filter((skill) => {
     const matchesSearch = skill.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -77,20 +110,12 @@ export default function ExperiencePage() {
     }
   }
 
-  const handleDeleteWorkExperience = (id: number) => {
-    deleteWorkExperience(id)
-  }
-
   const handleSaveEducation = (educationData: any) => {
     if (educationDialog.education) {
       updateEducation(educationDialog.education.id, educationData)
     } else {
       addEducation(educationData)
     }
-  }
-
-  const handleDeleteEducation = (id: number) => {
-    deleteEducation(id)
   }
 
   const handleSaveSkill = (skillData: any) => {
@@ -101,10 +126,6 @@ export default function ExperiencePage() {
     }
   }
 
-  const handleDeleteSkill = (id: number) => {
-    deleteSkill(id)
-  }
-
   const handleSaveAchievement = (achievementData: any) => {
     if (achievementDialog.achievement) {
       updateAchievement(achievementDialog.achievement.id, achievementData)
@@ -113,80 +134,140 @@ export default function ExperiencePage() {
     }
   }
 
-  const handleDeleteAchievement = (id: number) => {
-    deleteAchievement(id)
+  const profile = useCMSStore((state) => state.profile)
+
+  const formatMonthYear = (date: string) =>
+    new Date(date).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+
+  const handleExportResume = () => {
+    const doc = new jsPDF({ unit: "pt", format: "letter" })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 54
+    const contentWidth = pageWidth - margin * 2
+    let y = margin
+
+    const ensureSpace = (needed: number) => {
+      if (y + needed > pageHeight - margin) {
+        doc.addPage()
+        y = margin
+      }
+    }
+
+    const write = (text: string, size = 10, style: "normal" | "bold" | "italic" = "normal", indent = 0) => {
+      doc.setFont("helvetica", style)
+      doc.setFontSize(size)
+      const lines = doc.splitTextToSize(text, contentWidth - indent)
+      for (const line of lines) {
+        ensureSpace(16)
+        doc.text(line, margin + indent, y)
+        y += 14
+      }
+    }
+
+    const section = (title: string) => {
+      ensureSpace(34)
+      y += 12
+      doc.setFont("helvetica", "bold")
+      doc.setFontSize(12)
+      doc.text(title.toUpperCase(), margin, y)
+      y += 10
+      doc.setDrawColor(80, 80, 80)
+      doc.setLineWidth(0.75)
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 14
+    }
+
+    write(profile.name || "Your Name", 20, "bold")
+    if (profile.email) write(profile.email, 10, "normal")
+
+    section("Work Experience")
+    workExperience.forEach((exp, i) => {
+      if (i > 0) y += 8
+      write(`${exp.position} - ${exp.company}`, 11, "bold")
+      write(exp.location, 9)
+      write(`${formatMonthYear(exp.startDate)} - ${exp.current ? "Present" : formatMonthYear(exp.endDate!)}`, 9, "italic")
+      write(exp.description, 10)
+      exp.achievements.forEach((a) => write(`- ${a}`, 10, "normal", 10))
+      if (exp.technologies.length) write(`Technologies: ${exp.technologies.join(", ")}`, 9)
+    })
+
+    section("Education")
+    education.forEach((edu, i) => {
+      if (i > 0) y += 8
+      write(`${edu.degree} - ${edu.institution}`, 11, "bold")
+      write(edu.location, 9)
+      write(`${formatMonthYear(edu.startDate)} - ${formatMonthYear(edu.endDate)}`, 9, "italic")
+      if (edu.gpa) write(`GPA: ${edu.gpa}`, 10)
+      edu.achievements.forEach((a) => write(`- ${a}`, 10, "normal", 10))
+    })
+
+    section("Skills")
+    skills.forEach((skill) => write(`- ${skill.name} (${skill.category}, ${skill.level}%)`, 10))
+
+    section("Certifications & Achievements")
+    achievements.forEach((ach) => {
+      write(`- ${ach.title} - ${ach.issuer} (${ach.date})`, 10)
+      if (ach.url) write(ach.url, 9)
+    })
+
+    doc.save("resume.pdf")
+  }
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+    switch (deleteTarget.type) {
+      case "work":
+        deleteWorkExperience(deleteTarget.id)
+        break
+      case "education":
+        deleteEducation(deleteTarget.id)
+        break
+      case "skill":
+        deleteSkill(deleteTarget.id)
+        break
+      case "achievement":
+        deleteAchievement(deleteTarget.id)
+        break
+    }
+    setDeleteTarget(null)
+  }
+
+  const deleteMeta: Record<DeleteTarget["type"], { title: string; confirmLabel: string }> = {
+    work: { title: "Delete Work Experience", confirmLabel: "Delete Experience" },
+    education: { title: "Delete Education", confirmLabel: "Delete Education" },
+    skill: { title: "Delete Skill", confirmLabel: "Delete Skill" },
+    achievement: { title: "Delete Achievement", confirmLabel: "Delete Achievement" },
   }
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Experience</h1>
-            <p className="text-muted-foreground">Manage your professional journey, skills, and achievements</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2 bg-transparent">
-              <Award className="h-4 w-4" />
-              Export Resume
-            </Button>
-            <Button className="gap-2" onClick={() => setWorkDialog({ open: true })}>
-              <Plus className="h-4 w-4" />
-              Add Experience
-            </Button>
-          </div>
-        </div>
+        <PageHeader title="Experience" description="Manage your professional journey, skills, and achievements">
+          <Button variant="outline" className="gap-2 bg-transparent" onClick={handleExportResume}>
+            <Download className="h-4 w-4" />
+            Export Resume
+          </Button>
+        </PageHeader>
 
-        {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Years Experience</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalYearsExperience}+</div>
-              <p className="text-xs text-muted-foreground">Professional experience</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Companies</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{workExperience.length}</div>
-              <p className="text-xs text-muted-foreground">Organizations worked</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Skills</CardTitle>
-              <Code className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{skills.length}</div>
-              <p className="text-xs text-muted-foreground">Technical skills</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Certifications</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{achievements.filter((a) => a.type === "Certification").length}</div>
-              <p className="text-xs text-muted-foreground">Active certifications</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Years Experience"
+            value={`${totalYearsExperience}+`}
+            footer="Professional experience"
+            icon={Briefcase}
+          />
+          <StatCard title="Companies" value={workExperience.length} footer="Organizations worked" icon={Building} />
+          <StatCard title="Skills" value={skills.length} footer="Technical skills" icon={Code} />
+          <StatCard
+            title="Certifications"
+            value={achievements.filter((a) => a.type === "Certification").length}
+            footer="Active certifications"
+            icon={Award}
+          />
         </div>
 
-        {/* Tabs for different sections */}
-        <Tabs defaultValue="work" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="work">Work Experience</TabsTrigger>
             <TabsTrigger value="education">Education</TabsTrigger>
@@ -202,23 +283,29 @@ export default function ExperiencePage() {
                   <CardTitle>Work Experience</CardTitle>
                   <Button className="gap-2" onClick={() => setWorkDialog({ open: true })}>
                     <Plus className="h-4 w-4" />
-                    Add Position
+                    Add Experience
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {workExperience.map((exp, index) => (
-                    <div key={exp.id} className="relative">
-                      {/* Timeline line */}
+                    <div
+                      key={exp.id}
+                      id={`focus-work-${exp.id}`}
+                      className={`relative rounded-lg p-2 -m-2 transition-colors ${
+                        focused?.type === "work" && focused.id === exp.id
+                          ? "bg-primary/10 ring-2 ring-primary/40"
+                          : ""
+                      }`}
+                    >
                       {index < workExperience.length - 1 && (
-                        <div className="absolute left-6 top-12 h-full w-px bg-border" />
+                        <div className="absolute left-8 top-8 h-full w-px bg-border" />
                       )}
 
                       <div className="flex gap-4">
-                        {/* Timeline dot */}
                         <div
-                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 ${
+                          className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 ${
                             exp.current ? "border-primary bg-primary" : "border-border bg-background"
                           }`}
                         >
@@ -227,7 +314,6 @@ export default function ExperiencePage() {
                           />
                         </div>
 
-                        {/* Content */}
                         <div className="flex-1 space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
@@ -261,34 +347,16 @@ export default function ExperiencePage() {
                                 )}
                               </div>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  className="gap-2"
-                                  onClick={() => setWorkDialog({ open: true, experience: exp })}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="gap-2 text-destructive"
-                                  onClick={() => handleDeleteWorkExperience(exp.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <RowActions
+                              onEdit={() => setWorkDialog({ open: true, experience: exp })}
+                              onDelete={() =>
+                                setDeleteTarget({ type: "work", id: exp.id, title: exp.position })
+                              }
+                            />
                           </div>
 
                           <p className="text-sm text-muted-foreground">{exp.description}</p>
 
-                          {/* Achievements */}
                           <div className="space-y-2">
                             <h4 className="text-sm font-medium">Key Achievements:</h4>
                             <ul className="space-y-1">
@@ -301,7 +369,6 @@ export default function ExperiencePage() {
                             </ul>
                           </div>
 
-                          {/* Technologies */}
                           <div className="flex flex-wrap gap-1">
                             {exp.technologies.map((tech) => (
                               <Badge key={tech} variant="outline" className="text-xs">
@@ -333,7 +400,15 @@ export default function ExperiencePage() {
               <CardContent>
                 <div className="space-y-6">
                   {education.map((edu) => (
-                    <div key={edu.id} className="flex gap-4 p-4 border rounded-lg">
+                    <div
+                      key={edu.id}
+                      id={`focus-education-${edu.id}`}
+                      className={`flex gap-4 p-4 border rounded-lg transition-colors ${
+                        focused?.type === "education" && focused.id === edu.id
+                          ? "bg-primary/10 ring-2 ring-primary/40"
+                          : ""
+                      }`}
+                    >
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
                         <GraduationCap className="h-6 w-6 text-primary" />
                       </div>
@@ -366,32 +441,14 @@ export default function ExperiencePage() {
                               {edu.gpa && <Badge variant="secondary">GPA: {edu.gpa}</Badge>}
                             </div>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                className="gap-2"
-                                onClick={() => setEducationDialog({ open: true, education: edu })}
-                              >
-                                <Edit className="h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="gap-2 text-destructive"
-                                onClick={() => handleDeleteEducation(edu.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <RowActions
+                            onEdit={() => setEducationDialog({ open: true, education: edu })}
+                            onDelete={() =>
+                              setDeleteTarget({ type: "education", id: edu.id, title: edu.degree })
+                            }
+                          />
                         </div>
 
-                        {/* Achievements */}
                         <div className="space-y-1">
                           <h4 className="text-sm font-medium">Achievements:</h4>
                           <div className="flex flex-wrap gap-1">
@@ -403,7 +460,6 @@ export default function ExperiencePage() {
                           </div>
                         </div>
 
-                        {/* Coursework */}
                         <div className="space-y-1">
                           <h4 className="text-sm font-medium">Relevant Coursework:</h4>
                           <div className="flex flex-wrap gap-1">
@@ -428,30 +484,19 @@ export default function ExperiencePage() {
               <CardHeader>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <CardTitle>Technical Skills</CardTitle>
-                  <div className="flex gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Search skills..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-full sm:w-60"
-                      />
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2 bg-transparent">
-                          Category: {selectedSkillCategory}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {skillCategories.map((category) => (
-                          <DropdownMenuItem key={category} onClick={() => setSelectedSkillCategory(category)}>
-                            {category}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="flex flex-wrap gap-2">
+                    <SearchInput
+                      placeholder="Search skills..."
+                      value={searchTerm}
+                      onChange={setSearchTerm}
+                      className="sm:w-60"
+                    />
+                    <FilterDropdown
+                      label="Category"
+                      options={skillCategories}
+                      value={selectedSkillCategory}
+                      onChange={setSelectedSkillCategory}
+                    />
                     <Button className="gap-2" onClick={() => setSkillDialog({ open: true })}>
                       <Plus className="h-4 w-4" />
                       Add Skill
@@ -462,7 +507,15 @@ export default function ExperiencePage() {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
                   {filteredSkills.map((skill) => (
-                    <div key={skill.id} className="space-y-2 p-4 border rounded-lg">
+                    <div
+                      key={skill.id}
+                      id={`focus-skill-${skill.id}`}
+                      className={`space-y-2 p-4 border rounded-lg transition-colors ${
+                        focused?.type === "skills" && focused.id === skill.id
+                          ? "bg-primary/10 ring-2 ring-primary/40"
+                          : ""
+                      }`}
+                    >
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-medium text-foreground">{skill.name}</h3>
@@ -474,29 +527,10 @@ export default function ExperiencePage() {
                             <span>{skill.years} years</span>
                           </div>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="gap-2"
-                              onClick={() => setSkillDialog({ open: true, skill: skill })}
-                            >
-                              <Edit className="h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2 text-destructive"
-                              onClick={() => handleDeleteSkill(skill.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <RowActions
+                          onEdit={() => setSkillDialog({ open: true, skill: skill })}
+                          onDelete={() => setDeleteTarget({ type: "skill", id: skill.id, title: skill.name })}
+                        />
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
@@ -517,7 +551,7 @@ export default function ExperiencePage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Certifications & Awards</CardTitle>
+                  <CardTitle>Certifications, Awards & Links</CardTitle>
                   <Button className="gap-2" onClick={() => setAchievementDialog({ open: true })}>
                     <Plus className="h-4 w-4" />
                     Add Achievement
@@ -531,20 +565,27 @@ export default function ExperiencePage() {
                       <TableHead>Achievement</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {achievements.map((achievement) => (
-                      <TableRow key={achievement.id}>
+                      <TableRow
+                        key={achievement.id}
+                        id={`focus-achievement-${achievement.id}`}
+                        className={
+                          focused?.type === "achievement" && focused.id === achievement.id ? "bg-primary/10" : ""
+                        }
+                      >
                         <TableCell>
                           <div className="space-y-1">
                             <p className="font-medium text-foreground">{achievement.title}</p>
-                            <p className="text-sm text-muted-foreground">{achievement.issuer}</p>
-                            {achievement.credentialId && (
-                              <p className="text-xs text-muted-foreground">ID: {achievement.credentialId}</p>
-                            )}
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>{achievement.issuer}</span>
+                              {achievement.url && (
+                                <IconLink href={achievement.url} icon={ExternalLink} label="Open link" />
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -552,49 +593,14 @@ export default function ExperiencePage() {
                             {achievement.type}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(achievement.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          {achievement.expiryDate ? (
-                            <div className="space-y-1">
-                              <Badge
-                                variant={new Date(achievement.expiryDate) > new Date() ? "default" : "destructive"}
-                              >
-                                {new Date(achievement.expiryDate) > new Date() ? "Active" : "Expired"}
-                              </Badge>
-                              <p className="text-xs text-muted-foreground">
-                                Expires: {new Date(achievement.expiryDate).toLocaleDateString()}
-                              </p>
-                            </div>
-                          ) : (
-                            <Badge variant="secondary">Permanent</Badge>
-                          )}
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">{achievement.date}</TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                className="gap-2"
-                                onClick={() => setAchievementDialog({ open: true, achievement: achievement })}
-                              >
-                                <Edit className="h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="gap-2 text-destructive"
-                                onClick={() => handleDeleteAchievement(achievement.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <RowActions
+                            onEdit={() => setAchievementDialog({ open: true, achievement: achievement })}
+                            onDelete={() =>
+                              setDeleteTarget({ type: "achievement", id: achievement.id, title: achievement.title })
+                            }
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -605,7 +611,6 @@ export default function ExperiencePage() {
           </TabsContent>
         </Tabs>
 
-        {/* Dialog Components */}
         <WorkExperienceDialog
           open={workDialog.open}
           onOpenChange={(open) => setWorkDialog({ open })}
@@ -632,6 +637,21 @@ export default function ExperiencePage() {
           onOpenChange={(open) => setAchievementDialog({ open })}
           achievement={achievementDialog.achievement}
           onSave={handleSaveAchievement}
+        />
+
+        <ConfirmDeleteDialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeleteTarget(null)
+          }}
+          title={deleteTarget ? deleteMeta[deleteTarget.type].title : ""}
+          description={
+            <>
+              Are you sure you want to delete "{deleteTarget?.title || ""}"? This action cannot be undone.
+            </>
+          }
+          confirmLabel={deleteTarget ? deleteMeta[deleteTarget.type].confirmLabel : ""}
+          onConfirm={confirmDelete}
         />
       </div>
     </DashboardLayout>

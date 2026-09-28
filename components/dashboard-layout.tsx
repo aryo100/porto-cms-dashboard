@@ -2,9 +2,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { TopNavbar } from "@/components/top-navbar"
+import { useAuthStore } from "@/lib/auth-store"
 import { cn } from "@/lib/utils"
 
 interface DashboardLayoutProps {
@@ -13,6 +15,15 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const hasHydrated = useAuthStore((state) => state.hasHydrated)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) {
+      router.replace("/login")
+    }
+  }, [hasHydrated, isAuthenticated, router])
 
   return (
     <div className="min-h-screen bg-background">

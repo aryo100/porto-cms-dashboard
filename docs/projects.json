@@ -1,0 +1,38 @@
+{
+  "apiName": "projects",
+  "intro": {
+    "headline": "My Creative Projects",
+    "description": "Explore a selection of my personal and professional projects, each with detailed descriptions, technologies used, and links to live demos or source code."
+  },
+  "projects": [
+    {
+      "title": "E-commerce Platform",
+      "description": "A full-stack e-commerce application with user authentication, product catalog, and payment integration.",
+      "tech": ["Next.js", "React", "Node.js", "PostgreSQL", "Stripe"],
+      "image": "/placeholder.svg?height=200&width=300",
+      "github": "https://github.com/your-github/ecommerce-platform",
+      "live": "https://ecommerce.yourdomain.com"
+    },
+    {
+      "title": "AI Chatbot Assistant",
+      "description": "An intelligent chatbot powered by large language models, capable of natural language understanding and generation.",
+      "tech": ["Python", "Flask", "OpenAI API", "React", "WebSockets"],
+      "image": "/placeholder.svg?height=200&width=300",
+      "live": "https://chatbot.yourdomain.com"
+    },
+    {
+      "title": "Task Management App",
+      "description": "A simple and intuitive task management application to help users organize their daily tasks and boost productivity.",
+      "tech": ["Vue.js", "Firebase", "Tailwind CSS"],
+      "image": "/placeholder.svg?height=200&width=300",
+      "github": "https://github.com/your-github/task-app"
+    },
+    {
+      "title": "Portfolio Website V2",
+      "description": "The second iteration of my personal portfolio website, focusing on modern design and interactive elements.",
+      "tech": ["Next.js", "TypeScript", "Tailwind CSS", "Framer Motion"],
+      "image": "/placeholder.svg?height=200&width=300",
+      "live": "https://yourdomain.com"
+    }
+  ]
+}

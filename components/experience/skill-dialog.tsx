@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2 } from "lucide-react"
 
 interface Skill {
   id?: number
@@ -41,10 +42,15 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
     ...skill,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 500))
     onSave(formData)
     onOpenChange(false)
+    setLoading(false)
   }
 
   const categories = ["Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database", "Mobile", "Design"]
@@ -124,7 +130,10 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{skill ? "Update Skill" : "Add Skill"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {skill ? "Update Skill" : "Add Skill"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

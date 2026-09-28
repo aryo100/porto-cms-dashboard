@@ -1,0 +1,46 @@
+{
+  "apiName": "experience",
+  "intro": {
+    "headline": "My Professional Journey",
+    "subheading": "A timeline of my work experience, highlighting key roles, responsibilities, and achievements."
+  },
+  "experiences": [
+    {
+      "title": "Senior Software Engineer",
+      "company": "Tech Innovators Inc.",
+      "duration": "Jan 2023 - Present",
+      "location": "San Francisco, CA",
+      "highlights": [
+        "Led development of scalable microservices using Node.js and TypeScript.",
+        "Mentored junior engineers and conducted code reviews.",
+        "Optimized database queries, reducing latency by 30%.",
+        "Collaborated with product teams to define and implement new features."
+      ]
+    },
+    {
+      "title": "Software Engineer",
+      "company": "Web Solutions Co.",
+      "duration": "Jul 2020 - Dec 2022",
+      "location": "Austin, TX",
+      "highlights": [
+        "Developed front-end components with React and Next.js.",
+        "Integrated RESTful APIs and managed state with Redux.",
+        "Contributed to CI/CD pipeline improvements.",
+        "Participated in agile development sprints."
+      ]
+    },
+    {
+      "title": "Junior Developer Intern",
+      "company": "Startup Hub",
+      "duration": "May 2019 - Aug 2019",
+      "location": "New York, NY",
+      "highlights": [
+        "Assisted in building a Python/Django backend for a new web application.",
+        "Wrote unit and integration tests.",
+        "Learned version control with Git and GitHub.",
+        "Supported deployment processes."
+      ]
+    }
+  ]
+}
+

@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { X, Plus } from "lucide-react"
+import { X, Plus, Loader2 } from "lucide-react"
 
 interface Education {
   id?: number
@@ -51,14 +51,18 @@ export function EducationDialog({ open, onOpenChange, education, onSave }: Educa
 
   const [newAchievement, setNewAchievement] = useState("")
   const [newCourse, setNewCourse] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 500))
     onSave({
       ...formData,
       gpa: formData.gpa || null,
     })
     onOpenChange(false)
+    setLoading(false)
   }
 
   const addAchievement = () => {
@@ -233,7 +237,10 @@ export function EducationDialog({ open, onOpenChange, education, onSave }: Educa
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{education ? "Update Education" : "Add Education"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {education ? "Update Education" : "Add Education"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

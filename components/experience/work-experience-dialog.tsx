@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
+import { SkillMultiSelect } from "@/components/common/skill-multi-select"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { X, Plus } from "lucide-react"
+import { useCMSStore } from "@/lib/store"
+import { X, Plus, Loader2 } from "lucide-react"
 
 interface WorkExperience {
   id?: number
@@ -54,12 +55,17 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
   })
 
   const [newAchievement, setNewAchievement] = useState("")
-  const [newTechnology, setNewTechnology] = useState("")
+  const [loading, setLoading] = useState(false)
+  const skills = useCMSStore((state) => state.skills)
+  const skillNames = skills.map((skill) => skill.name)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    await new Promise((resolve) => setTimeout(resolve, 500))
     onSave(formData)
     onOpenChange(false)
+    setLoading(false)
   }
 
   const addAchievement = () => {
@@ -76,23 +82,6 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
     setFormData((prev) => ({
       ...prev,
       achievements: prev.achievements.filter((_, i) => i !== index),
-    }))
-  }
-
-  const addTechnology = () => {
-    if (newTechnology.trim() && !formData.technologies.includes(newTechnology.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        technologies: [...prev.technologies, newTechnology.trim()],
-      }))
-      setNewTechnology("")
-    }
-  }
-
-  const removeTechnology = (tech: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      technologies: prev.technologies.filter((t) => t !== tech),
     }))
   }
 
@@ -218,36 +207,22 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Technologies Used</Label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={newTechnology}
-                onChange={(e) => setNewTechnology(e.target.value)}
-                placeholder="Add technology"
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTechnology())}
-              />
-              <Button type="button" onClick={addTechnology} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.technologies.map((tech) => (
-                <Badge key={tech} variant="secondary" className="gap-1">
-                  {tech}
-                  <button type="button" onClick={() => removeTechnology(tech)} className="ml-1 hover:text-destructive">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <SkillMultiSelect
+            label="Technologies Used"
+            value={formData.technologies}
+            onChange={(techs) => setFormData((prev) => ({ ...prev, technologies: techs }))}
+            options={skillNames}
+            placeholder="Select technologies from your skills"
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">{experience ? "Update Experience" : "Add Experience"}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {experience ? "Update Experience" : "Add Experience"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

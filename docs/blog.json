@@ -1,0 +1,99 @@
+{
+  "apiName": "blog",
+  "intro": {
+    "headline": "My Insights & Achievements",
+    "description": "Articles, thoughts on technology, and certifications I've received throughout my career."
+  },
+  "entries": [
+    {
+      "type": "internal",
+      "title": "Mastering React Hooks: A Deep Dive",
+      "slug": "mastering-react-hooks-a-deep-dive",
+      "date": "February 2024",
+      "description": "An in-depth article exploring advanced React Hooks patterns and best practices for building robust applications.",
+      "content": [
+        "React Hooks changed how we build components forever. In this article, we explore advanced patterns such as custom hooks, useReducer for complex state, and performance optimizations with useMemo and useCallback.",
+        "We start with the fundamentals and build up to real-world scenarios: fetching data with custom hooks, managing forms, and sharing logic across components without render props or higher-order components.",
+        "By the end, you will have a mental model that lets you design your own reusable hooks and debug common pitfalls like stale closures and infinite re-render loops."
+      ]
+    },
+    {
+      "type": "internal",
+      "title": "Demystifying Microservices Architecture",
+      "slug": "demystifying-microservices-architecture",
+      "date": "September 2023",
+      "description": "A comprehensive guide to understanding and implementing microservices, including benefits and challenges.",
+      "content": [
+        "Microservices split a monolith into independently deployable services, each owning a slice of the business domain. This guide walks through the core concepts, from bounded contexts to API gateways.",
+        "We discuss when microservices actually make sense, the operational complexity they introduce (service discovery, observability, distributed transactions), and pragmatic alternatives like modular monoliths.",
+        "A practical example ties everything together: designing, containerizing, and orchestrating a small set of services with Docker and Kubernetes."
+      ]
+    },
+    {
+      "type": "internal",
+      "title": "Scaling Web Applications with PostgreSQL",
+      "slug": "scaling-web-applications-with-postgresql",
+      "date": "May 2024",
+      "description": "Practical strategies for scaling a PostgreSQL-backed web app: indexing, caching, connection pooling, and read replicas.",
+      "content": [
+        "Before reaching for a new database, most applications can scale much further with disciplined PostgreSQL usage. This article covers index design, query analysis with EXPLAIN, and caching layers.",
+        "We explore connection pooling with PgBouncer, read replicas for analytics workloads, partitioning large tables, and vacuum maintenance that keeps performance predictable.",
+        "Each strategy comes with trade-offs and metrics you should track to know when you genuinely need the next step."
+      ]
+    },
+    {
+      "type": "internal",
+      "title": "A Practical Guide to TypeScript Type Safety",
+      "slug": "a-practical-guide-to-typescript-type-safety",
+      "date": "March 2024",
+      "description": "How to get the most out of TypeScript: discriminated unions, generics, and type guards for safer code.",
+      "content": [
+        "TypeScript's value shows when the types actually prevent bugs. This guide dives into discriminated unions, literal types, and user-defined type guards.",
+        "We look at practical generic patterns for building flexible yet safe APIs, and how to narrow types so runtime validation aligns with compile-time guarantees.",
+        "You will learn to avoid the 'any' escape hatch and design types that make invalid states impossible to represent."
+      ]
+    },
+    {
+      "type": "internal",
+      "title": "Building Reusable UI Components with Tailwind CSS",
+      "slug": "building-reusable-ui-components-with-tailwind-css",
+      "date": "January 2024",
+      "description": "Tips for creating consistent, accessible, and reusable components on top of Tailwind CSS.",
+      "content": [
+        "Tailwind gives you primitives, not components. To stay consistent at scale, you need a strategy: tokens, variants, and composition.",
+        "We explore how to define design tokens, build polymorphic components with class variance, and keep accessibility baked in from the start.",
+        "The result is a lightweight component system that teams can extend without fighting the framework."
+      ]
+    },
+    {
+      "type": "external",
+      "title": "The State of JavaScript 2024",
+      "url": "https://stateofjs.com/en-US/2024",
+      "date": "December 2024",
+      "description": "My takeaways from the State of JavaScript survey, and what the trends mean for modern front-end development.",
+      "source": "State of JS"
+    },
+    {
+      "type": "external",
+      "title": "Improving Frontend Performance",
+      "url": "https://web.dev/learn/performance",
+      "date": "July 2024",
+      "description": "A curated summary of performance best practices I apply to every project I ship.",
+      "source": "web.dev"
+    },
+    {
+      "type": "achievement",
+      "title": "Google Cloud Certified Professional Developer",
+      "url": "https://www.credential.net/your-google-cloud-credential",
+      "date": "March 2024",
+      "description": "Achieved certification in Google Cloud Platform development, demonstrating expertise in building and deploying scalable applications."
+    },
+    {
+      "type": "achievement",
+      "title": "Microsoft Certified: Azure Developer Associate",
+      "url": "https://learn.microsoft.com/en-us/users/your-profile/credentials/azure-developer",
+      "date": "November 2023",
+      "description": "Validated skills in designing, building, testing, and maintaining cloud applications on Microsoft Azure."
+    }
+  ]
+}

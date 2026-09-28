@@ -1,0 +1,23 @@
+{
+  "apiName": "site",
+  "brand": {
+    "name": "My Portfolio",
+    "icon": "code",
+    "logoText": "CV"
+  },
+  "nav": [
+    { "href": "/", "label": "Home" },
+    { "href": "/experience", "label": "Experience" },
+    { "href": "/projects", "label": "Projects" },
+    { "href": "/blog", "label": "Blog" }
+  ],
+  "footer": {
+    "copyrightName": "My Portfolio",
+    "rightsText": "All rights reserved.",
+    "socials": [
+      { "icon": "github", "href": "https://github.com/your-github", "label": "GitHub" },
+      { "icon": "linkedin", "href": "https://linkedin.com/in/your-linkedin", "label": "LinkedIn" },
+      { "icon": "twitter", "href": "https://twitter.com/your-twitter", "label": "Twitter" }
+    ]
+  }
+}

@@ -1,7 +1,5 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
-
 import { useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
@@ -14,36 +12,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PageHeader } from "@/components/common/page-header"
 import {
   User,
   Globe,
   Search,
   Palette,
-  Shield,
   Download,
   Upload,
   Save,
-  Eye,
+  ExternalLink,
   Mail,
   Github,
   Linkedin,
   Twitter,
-  ExternalLink,
 } from "lucide-react"
+import { useCMSStore } from "@/lib/store"
 
 export default function SettingsPage() {
+  const siteWebsite = useCMSStore((state) => state.site.website)
+  const setSiteWebsite = useCMSStore((state) => state.setSiteWebsite)
+  const profile = useCMSStore((state) => state.profile)
+  const setProfile = useCMSStore((state) => state.setProfile)
+
   const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    bio: "Full-stack developer passionate about creating innovative web solutions. Experienced in React, Node.js, and cloud technologies.",
+    name: profile.name,
+    email: profile.email,
+    bio: "I'm a passionate software engineer who loves building delightful and impactful web experiences. Let's create something amazing together!",
     location: "San Francisco, CA",
-    website: "https://johndoe.dev",
-    avatar: "/professional-headshot.png",
+    website: siteWebsite,
+    avatar: "/placeholder.svg?height=180&width=180",
   })
 
   const [siteConfig, setSiteConfig] = useState({
-    siteTitle: "John Doe - Software Engineer",
-    tagline: "Building the future, one line of code at a time",
+    siteTitle: "[Your Name] - Software Engineer",
+    tagline: "Building delightful & impactful web experiences.",
     description: "Portfolio website showcasing my software engineering projects and experience",
     primaryColor: "#0891b2",
     theme: "light",
@@ -62,54 +65,39 @@ export default function SettingsPage() {
   })
 
   const [socialLinks, setSocialLinks] = useState({
-    github: "https://github.com/johndoe",
-    linkedin: "https://linkedin.com/in/johndoe",
+    github: "https://github.com/your-github",
+    linkedin: "https://linkedin.com/in/your-linkedin",
     twitter: "https://twitter.com/johndoe",
     email: "john.doe@example.com",
-  })
-
-  const [contactForm, setContactForm] = useState({
-    enabled: true,
-    emailNotifications: true,
-    autoReply: true,
-    fields: ["name", "email", "subject", "message"],
-  })
-
-  const [backupSettings, setBackupSettings] = useState({
-    autoBackup: true,
-    backupFrequency: "weekly",
-    lastBackup: "2024-03-20T10:30:00Z",
   })
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground">Manage your profile, site configuration, and integrations</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2 bg-transparent">
-              <Download className="h-4 w-4" />
-              Export Data
-            </Button>
-            <Button className="gap-2">
-              <Save className="h-4 w-4" />
-              Save Changes
-            </Button>
-          </div>
-        </div>
+        <PageHeader title="Settings" description="Manage your profile and site configuration">
+          <Button variant="outline" className="gap-2 bg-transparent">
+            <Download className="h-4 w-4" />
+            Export Data
+          </Button>
+          <Button
+            className="gap-2"
+            onClick={() => {
+              setSiteWebsite(profileData.website)
+              setProfile({ name: profileData.name, email: profileData.email })
+            }}
+          >
+            <Save className="h-4 w-4" />
+            Save Changes
+          </Button>
+        </PageHeader>
 
         {/* Settings Tabs */}
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="site">Site Config</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
-            <TabsTrigger value="backup">Backup</TabsTrigger>
           </TabsList>
 
           {/* Profile Settings */}
@@ -356,48 +344,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Contact Form Settings */}
-                <Separator />
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Contact Form
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Enable Contact Form</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Allow visitors to contact you through your website
-                        </p>
-                      </div>
-                      <Switch
-                        checked={contactForm.enabled}
-                        onCheckedChange={(checked) => setContactForm({ ...contactForm, enabled: checked })}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Email Notifications</Label>
-                        <p className="text-sm text-muted-foreground">Receive email when someone submits the form</p>
-                      </div>
-                      <Switch
-                        checked={contactForm.emailNotifications}
-                        onCheckedChange={(checked) => setContactForm({ ...contactForm, emailNotifications: checked })}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Auto Reply</Label>
-                        <p className="text-sm text-muted-foreground">Send automatic confirmation to visitors</p>
-                      </div>
-                      <Switch
-                        checked={contactForm.autoReply}
-                        onCheckedChange={(checked) => setContactForm({ ...contactForm, autoReply: checked })}
-                      />
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -510,181 +456,6 @@ export default function SettingsPage() {
                         onCheckedChange={(checked) => setSeoSettings({ ...seoSettings, robots: checked })}
                       />
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Integrations */}
-          <TabsContent value="integrations" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ExternalLink className="h-5 w-5" />
-                  Third-party Integrations
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4">
-                  {/* Integration Cards */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-black rounded-lg flex items-center justify-center">
-                        <Github className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">GitHub</h3>
-                        <p className="text-sm text-muted-foreground">Sync repositories and contributions</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="default">Connected</Badge>
-                      <Button variant="outline" size="sm">
-                        Configure
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <Linkedin className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">LinkedIn</h3>
-                        <p className="text-sm text-muted-foreground">Import professional experience</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Not Connected</Badge>
-                      <Button variant="outline" size="sm">
-                        Connect
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                        <Search className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Google Analytics</h3>
-                        <p className="text-sm text-muted-foreground">Track website performance</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="default">Connected</Badge>
-                      <Button variant="outline" size="sm">
-                        Configure
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Backup & Export */}
-          <TabsContent value="backup" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Backup & Data Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Auto Backup Settings */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Automatic Backups</Label>
-                      <p className="text-sm text-muted-foreground">Automatically backup your data regularly</p>
-                    </div>
-                    <Switch
-                      checked={backupSettings.autoBackup}
-                      onCheckedChange={(checked) => setBackupSettings({ ...backupSettings, autoBackup: checked })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="backup-frequency">Backup Frequency</Label>
-                    <Select
-                      value={backupSettings.backupFrequency}
-                      onValueChange={(value) => setBackupSettings({ ...backupSettings, backupFrequency: value })}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Last Backup</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(backupSettings.lastBackup).toLocaleString()}
-                        </p>
-                      </div>
-                      <Button variant="outline" className="gap-2 bg-transparent">
-                        <Download className="h-4 w-4" />
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Manual Actions */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Manual Actions</h3>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Button variant="outline" className="gap-2 h-auto p-4 flex-col items-start bg-transparent">
-                      <div className="flex items-center gap-2 w-full">
-                        <Download className="h-4 w-4" />
-                        <span className="font-medium">Export All Data</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground text-left">
-                        Download complete backup of all your content
-                      </p>
-                    </Button>
-
-                    <Button variant="outline" className="gap-2 h-auto p-4 flex-col items-start bg-transparent">
-                      <div className="flex items-center gap-2 w-full">
-                        <Upload className="h-4 w-4" />
-                        <span className="font-medium">Import Data</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground text-left">Restore from a previous backup file</p>
-                    </Button>
-
-                    <Button variant="outline" className="gap-2 h-auto p-4 flex-col items-start bg-transparent">
-                      <div className="flex items-center gap-2 w-full">
-                        <Eye className="h-4 w-4" />
-                        <span className="font-medium">Preview Site</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground text-left">
-                        View how your portfolio looks to visitors
-                      </p>
-                    </Button>
-
-                    <Button variant="outline" className="gap-2 h-auto p-4 flex-col items-start bg-transparent">
-                      <div className="flex items-center gap-2 w-full">
-                        <Globe className="h-4 w-4" />
-                        <span className="font-medium">Publish Changes</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground text-left">
-                        Deploy your latest changes to production
-                      </p>
-                    </Button>
                   </div>
                 </div>
               </CardContent>

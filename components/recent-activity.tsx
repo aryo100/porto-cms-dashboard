@@ -1,48 +1,63 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronRight } from "lucide-react"
 
-const recentItems = [
+interface RecentActivityItem {
+  id: number
+  title: string
+  type: "Project" | "Blog Post" | "Certificate" | "Experience"
+  status: string
+  lastModified: string
+  views: number
+  target: string
+}
+
+const recentItems: RecentActivityItem[] = [
   {
     id: 1,
     title: "E-commerce Platform",
     type: "Project",
-    status: "Published",
+    status: "Completed",
     lastModified: "2 hours ago",
     views: 234,
+    target: "/projects?focus=1",
   },
   {
     id: 2,
-    title: "React Best Practices",
+    title: "Mastering React Hooks: A Deep Dive",
     type: "Blog Post",
-    status: "Draft",
+    status: "Published",
     lastModified: "1 day ago",
-    views: 0,
+    views: 3200,
+    target: "/blog?focus=1",
   },
   {
     id: 3,
-    title: "AWS Solutions Architect",
+    title: "Google Cloud Certified Professional Developer",
     type: "Certificate",
     status: "Published",
     lastModified: "3 days ago",
     views: 89,
+    target: "/experience?focus=1&type=achievement",
   },
   {
     id: 4,
-    title: "Senior Frontend Developer",
+    title: "Senior Software Engineer",
     type: "Experience",
     status: "Published",
     lastModified: "1 week ago",
     views: 156,
+    target: "/experience?focus=1&type=work",
   },
 ]
 
 export function RecentActivity() {
+  const router = useRouter()
+
   return (
     <Card>
       <CardHeader>
@@ -56,12 +71,16 @@ export function RecentActivity() {
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Views</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {recentItems.map((item) => (
-              <TableRow key={item.id} className="h-16">
+              <TableRow
+                key={item.id}
+                className="h-16 cursor-pointer transition-colors hover:bg-accent/50"
+                onClick={() => router.push(item.target)}
+              >
                 <TableCell>
                   <div>
                     <div className="font-medium">{item.title}</div>
@@ -81,27 +100,7 @@ export function RecentActivity() {
                 </TableCell>
                 <TableCell>{item.views}</TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ))}
