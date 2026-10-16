@@ -138,6 +138,9 @@ export interface Skill {
   category: SkillCategory
   level: number
   years: number
+  color: string
+  icon: string
+  showOnPortfolio: boolean
 }
 
 export type SkillInput = Omit<Skill, "id">
@@ -171,6 +174,7 @@ export interface Settings {
     location: string
     website: string
     avatar: string
+    cv?: { url: string; name: string; size: number } | null
   }
   siteConfig: {
     siteTitle: string

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCMSStore } from "@/lib/store"
+import { apiAssetUrl, apiDeleteUpload, apiUpload } from "@/lib/api-client"
 import { Loader2, ImagePlus, Trash2, RefreshCw } from "lucide-react"
 
 interface Project {
@@ -37,7 +38,7 @@ interface ProjectFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   project?: Project
-  onSave: (project: Project) => void
+  onSave: (project: Project) => Promise<void>
 }
 
 export function ProjectFormDialog({ open, onOpenChange, project, onSave }: ProjectFormDialogProps) {
@@ -45,7 +46,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
     title: project?.title || "",
     description: project?.description || "",
     status: project?.status || "Completed",
-    category: project?.category || "Web App",
+    category: project?.category || "Web Development",
     techStack: project?.techStack ?? project?.technologies ?? [],
     githubUrl: project?.githubUrl || "",
     liveUrl: project?.liveUrl || "",
@@ -54,36 +55,90 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
   })
 
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const draftUploads = useRef(new Set<string>())
   const skills = useCMSStore((state) => state.skills)
   const skillNames = skills.map((skill) => skill.name)
+
+  useEffect(() => () => {
+    for (const url of draftUploads.current) void apiDeleteUpload(url).catch(() => {})
+  }, [])
+
+  const discardDrafts = async (keep?: string) => {
+    for (const url of draftUploads.current) {
+      if (url === keep) continue
+      await apiDeleteUpload(url)
+      draftUploads.current.delete(url)
+    }
+  }
+
+  const closeDialog = async () => {
+    if (loading) return
+    try {
+      await discardDrafts()
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menghapus gambar sementara")
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onSave({ ...formData, technologies: formData.techStack })
-    onOpenChange(false)
-    setLoading(false)
+    setError("")
+    try {
+      await onSave({ ...formData, technologies: formData.techStack })
+      draftUploads.current.delete(formData.image)
+      await discardDrafts()
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menyimpan project")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith("image/")) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setFormData((prev) => ({ ...prev, image: reader.result as string }))
+    setLoading(true)
+    setError("")
+    try {
+      const uploaded = await apiUpload(file)
+      draftUploads.current.add(uploaded.url)
+      await discardDrafts(uploaded.url)
+      setFormData((prev) => ({ ...prev, image: uploaded.url }))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal mengunggah gambar")
+    } finally {
+      setLoading(false)
+      e.target.value = ""
     }
-    reader.readAsDataURL(file)
-    e.target.value = ""
   }
 
   const updateTechStack = (tags: string[]) => {
     setFormData((prev) => ({ ...prev, techStack: tags }))
   }
 
+  const removeImage = async () => {
+    if (draftUploads.current.has(formData.image)) {
+      setLoading(true)
+      try {
+        await apiDeleteUpload(formData.image)
+        draftUploads.current.delete(formData.image)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Gagal menghapus gambar")
+        setLoading(false)
+        return
+      }
+      setLoading(false)
+    }
+    setFormData((prev) => ({ ...prev, image: "" }))
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next) void closeDialog(); else onOpenChange(true) }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{project ? "Edit Project" : "Add New Project"}</DialogTitle>
@@ -115,10 +170,12 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Web App">Web App</SelectItem>
+                  <SelectItem value="Web Development">Web Development</SelectItem>
                   <SelectItem value="Mobile App">Mobile App</SelectItem>
+                  <SelectItem value="Desktop App">Desktop App</SelectItem>
                   <SelectItem value="API">API</SelectItem>
                   <SelectItem value="Open Source">Open Source</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -160,7 +217,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
                 <label className="group relative flex h-32 w-44 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-md border border-dashed bg-muted/50 text-muted-foreground transition-colors hover:bg-accent">
                   {formData.image ? (
                     <>
-                      <img src={formData.image} alt="Project preview" className="absolute inset-0 h-full w-full object-cover" />
+                      <img src={apiAssetUrl(formData.image)} alt="Project preview" className="absolute inset-0 h-full w-full object-cover" />
                       <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-opacity group-hover:bg-black/40 group-hover:opacity-100">
                         <RefreshCw className="h-5 w-5" />
                       </span>
@@ -171,14 +228,15 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
                       <span className="text-sm">Upload Image</span>
                     </>
                   )}
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={loading} />
                 </label>
                 {formData.image && (
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
+                    onClick={() => { void removeImage() }}
+                    disabled={loading}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -217,8 +275,9 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
             </div>
           </div>
 
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => { void closeDialog() }} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

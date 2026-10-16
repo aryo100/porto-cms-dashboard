@@ -37,7 +37,7 @@ interface WorkExperienceDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   experience?: WorkExperience
-  onSave: (experience: WorkExperience) => void
+  onSave: (experience: WorkExperience) => Promise<void>
 }
 
 export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }: WorkExperienceDialogProps) {
@@ -56,16 +56,22 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
 
   const [newAchievement, setNewAchievement] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const skills = useCMSStore((state) => state.skills)
   const skillNames = skills.map((skill) => skill.name)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onSave(formData)
-    onOpenChange(false)
-    setLoading(false)
+    setError("")
+    try {
+      await onSave(formData)
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pengalaman kerja")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const addAchievement = () => {
@@ -215,6 +221,7 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
             placeholder="Select technologies from your skills"
           />
 
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

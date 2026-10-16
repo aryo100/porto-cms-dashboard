@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
+import { SkillIconPicker } from "./skill-icon-picker"
 
 interface Skill {
   id?: number
@@ -24,13 +26,16 @@ interface Skill {
   category: string
   level: number
   years: number
+  color: string
+  icon: string
+  showOnPortfolio: boolean
 }
 
 interface SkillDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   skill?: Skill
-  onSave: (skill: Skill) => void
+  onSave: (skill: Skill) => Promise<void>
 }
 
 export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogProps) {
@@ -39,18 +44,27 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
     category: skill?.category || "Programming",
     level: skill?.level || 50,
     years: skill?.years || 1,
+    color: skill?.color || "#64748b",
+    icon: skill?.icon || "code",
+    showOnPortfolio: skill?.showOnPortfolio ?? true,
     ...skill,
   })
 
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onSave(formData)
-    onOpenChange(false)
-    setLoading(false)
+    setError("")
+    try {
+      await onSave(formData)
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menyimpan skill")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const categories = ["Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database", "Mobile", "Design"]
@@ -97,6 +111,25 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
           </div>
 
           <div className="space-y-2">
+            <Label>Skill Icon</Label>
+            <SkillIconPicker value={formData.icon} onChange={(icon) => setFormData((prev) => ({ ...prev, icon }))} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="skill-color">Skill Color</Label>
+            <div className="flex items-center gap-3">
+              <Input id="skill-color" type="color" value={formData.color} onChange={(event) => setFormData((prev) => ({ ...prev, color: event.target.value }))} className="h-10 w-16 cursor-pointer p-1" />
+              <Input aria-label="Skill color hex" value={formData.color} onChange={(event) => setFormData((prev) => ({ ...prev, color: event.target.value }))} pattern="#[0-9a-fA-F]{6}" maxLength={7} className="w-28" required />
+              <span className="text-sm text-muted-foreground">Badge portfolio</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="show-on-portfolio">Tampilkan di Porto</Label>
+            <Switch id="show-on-portfolio" checked={formData.showOnPortfolio} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showOnPortfolio: checked }))} />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="years">Years of Experience</Label>
             <Input
               id="years"
@@ -126,6 +159,7 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
             </div>
           </div>
 
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

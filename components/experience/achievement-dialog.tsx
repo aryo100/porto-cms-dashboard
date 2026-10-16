@@ -30,7 +30,7 @@ interface AchievementDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   achievement?: Achievement
-  onSave: (achievement: Achievement) => void
+  onSave: (achievement: Achievement) => Promise<void>
 }
 
 export function AchievementDialog({ open, onOpenChange, achievement, onSave }: AchievementDialogProps) {
@@ -44,17 +44,20 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
   })
 
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onSave({
-      ...formData,
-      url: formData.url || null,
-    })
-    onOpenChange(false)
-    setLoading(false)
+    setError("")
+    try {
+      await onSave({ ...formData, url: formData.url || null })
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pencapaian")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -129,6 +132,7 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
             <p className="text-xs text-muted-foreground">Link to the credential, article, or external reference.</p>
           </div>
 
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

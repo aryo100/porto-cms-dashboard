@@ -20,6 +20,7 @@ import { EducationDialog } from "@/components/experience/education-dialog"
 import { SkillDialog } from "@/components/experience/skill-dialog"
 import { AchievementDialog } from "@/components/experience/achievement-dialog"
 import { useCMSStore } from "@/lib/store"
+import { SkillIcon } from "@/components/experience/skill-icon"
 import { jsPDF } from "jspdf"
 import {
   Plus,
@@ -35,7 +36,11 @@ import {
   Download,
 } from "lucide-react"
 
-const skillCategories = ["All", "Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database"]
+const skillCategories = ["All", "Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database", "Mobile", "Design"]
+
+function SkillIconPreview({ icon, color }: { icon: string; color: string }) {
+  return <SkillIcon name={icon} className="h-4 w-4" style={{ color: color || "#64748b" }} />
+}
 
 type DeleteTarget = { type: "work" | "education" | "skill" | "achievement"; id: number; title: string }
 
@@ -99,38 +104,43 @@ export default function ExperiencePage() {
     return matchesSearch && matchesCategory
   })
 
-  const totalYearsExperience = new Date().getFullYear() - 2019
+  const totalYearsExperience = workExperience.reduce((years, item) => {
+    if (!item.startDate) return years
+    const start = new Date(item.startDate).getTime()
+    const end = item.current ? Date.now() : item.endDate ? new Date(item.endDate).getTime() : start
+    return years + Math.max(0, (end - start) / 31_557_600_000)
+  }, 0)
   const currentPosition = workExperience.find((exp) => exp.current)
 
-  const handleSaveWorkExperience = (experienceData: any) => {
+  const handleSaveWorkExperience = async (experienceData: any) => {
     if (workDialog.experience) {
-      updateWorkExperience(workDialog.experience.id, experienceData)
+      await updateWorkExperience(workDialog.experience.id, experienceData)
     } else {
-      addWorkExperience(experienceData)
+      await addWorkExperience(experienceData)
     }
   }
 
-  const handleSaveEducation = (educationData: any) => {
+  const handleSaveEducation = async (educationData: any) => {
     if (educationDialog.education) {
-      updateEducation(educationDialog.education.id, educationData)
+      await updateEducation(educationDialog.education.id, educationData)
     } else {
-      addEducation(educationData)
+      await addEducation(educationData)
     }
   }
 
-  const handleSaveSkill = (skillData: any) => {
+  const handleSaveSkill = async (skillData: any) => {
     if (skillDialog.skill) {
-      updateSkill(skillDialog.skill.id, skillData)
+      await updateSkill(skillDialog.skill.id, skillData)
     } else {
-      addSkill(skillData)
+      await addSkill(skillData)
     }
   }
 
-  const handleSaveAchievement = (achievementData: any) => {
+  const handleSaveAchievement = async (achievementData: any) => {
     if (achievementDialog.achievement) {
-      updateAchievement(achievementDialog.achievement.id, achievementData)
+      await updateAchievement(achievementDialog.achievement.id, achievementData)
     } else {
-      addAchievement(achievementData)
+      await addAchievement(achievementData)
     }
   }
 
@@ -214,20 +224,20 @@ export default function ExperiencePage() {
     doc.save("resume.pdf")
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return
     switch (deleteTarget.type) {
       case "work":
-        deleteWorkExperience(deleteTarget.id)
+        await deleteWorkExperience(deleteTarget.id)
         break
       case "education":
-        deleteEducation(deleteTarget.id)
+        await deleteEducation(deleteTarget.id)
         break
       case "skill":
-        deleteSkill(deleteTarget.id)
+        await deleteSkill(deleteTarget.id)
         break
       case "achievement":
-        deleteAchievement(deleteTarget.id)
+        await deleteAchievement(deleteTarget.id)
         break
     }
     setDeleteTarget(null)
@@ -253,11 +263,11 @@ export default function ExperiencePage() {
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard
             title="Years Experience"
-            value={`${totalYearsExperience}+`}
+            value={Math.round(totalYearsExperience)}
             footer="Professional experience"
             icon={Briefcase}
           />
-          <StatCard title="Companies" value={workExperience.length} footer="Organizations worked" icon={Building} />
+          <StatCard title="Companies" value={new Set(workExperience.map((item) => item.company)).size} footer="Organizations worked" icon={Building} />
           <StatCard title="Skills" value={skills.length} footer="Technical skills" icon={Code} />
           <StatCard
             title="Certifications"
@@ -518,13 +528,14 @@ export default function ExperiencePage() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="font-medium text-foreground">{skill.name}</h3>
+                          <h3 className="flex items-center gap-2 font-medium text-foreground"><SkillIconPreview icon={skill.icon} color={skill.color} />{skill.name}</h3>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Badge variant="outline" className="text-xs">
                               {skill.category}
                             </Badge>
                             <span>•</span>
                             <span>{skill.years} years</span>
+                            {skill.showOnPortfolio && <Badge variant="secondary" className="text-xs">Porto</Badge>}
                           </div>
                         </div>
                         <RowActions
@@ -537,7 +548,7 @@ export default function ExperiencePage() {
                           <span>Proficiency</span>
                           <span className="font-medium">{skill.level}%</span>
                         </div>
-                        <Progress value={skill.level} className="h-2" />
+                        <Progress value={skill.level} indicatorColor={skill.color} className="h-2" />
                       </div>
                     </div>
                   ))}
@@ -611,33 +622,33 @@ export default function ExperiencePage() {
           </TabsContent>
         </Tabs>
 
-        <WorkExperienceDialog
+        {workDialog.open && <WorkExperienceDialog
           open={workDialog.open}
           onOpenChange={(open) => setWorkDialog({ open })}
           experience={workDialog.experience}
           onSave={handleSaveWorkExperience}
-        />
+        />}
 
-        <EducationDialog
+        {educationDialog.open && <EducationDialog
           open={educationDialog.open}
           onOpenChange={(open) => setEducationDialog({ open })}
           education={educationDialog.education}
           onSave={handleSaveEducation}
-        />
+        />}
 
-        <SkillDialog
+        {skillDialog.open && <SkillDialog
           open={skillDialog.open}
           onOpenChange={(open) => setSkillDialog({ open })}
           skill={skillDialog.skill}
           onSave={handleSaveSkill}
-        />
+        />}
 
-        <AchievementDialog
+        {achievementDialog.open && <AchievementDialog
           open={achievementDialog.open}
           onOpenChange={(open) => setAchievementDialog({ open })}
           achievement={achievementDialog.achievement}
           onSave={handleSaveAchievement}
-        />
+        />}
 
         <ConfirmDeleteDialog
           open={deleteTarget !== null}

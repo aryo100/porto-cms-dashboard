@@ -30,7 +30,7 @@ interface BlogFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   post?: BlogPost
-  onSave: (post: BlogPost) => void
+  onSave: (post: BlogPost) => Promise<void>
 }
 
 export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDialogProps) {
@@ -43,11 +43,12 @@ export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDia
   })
 
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    setError("")
 
     const slug =
       formData.slug ||
@@ -61,15 +62,14 @@ export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDia
       .map((para) => para.trim())
       .filter(Boolean)
 
-    onSave({
-      title: formData.title,
-      slug,
-      date: formData.date,
-      description: formData.description,
-      content,
-    })
-    onOpenChange(false)
-    setLoading(false)
+    try {
+      await onSave({ title: formData.title, slug, date: formData.date, description: formData.description, content })
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menyimpan artikel")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const generateSlug = () => {
@@ -159,6 +159,7 @@ export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDia
             <p className="text-xs text-muted-foreground">Separate paragraphs with a blank line.</p>
           </div>
 
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

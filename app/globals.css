@@ -38,6 +38,8 @@
   --sidebar-accent-foreground: oklch(0.25 0 0); /* Dark text on sidebar accent */
   --sidebar-border: oklch(0.9 0 0); /* Light sidebar border */
   --sidebar-ring: oklch(0.5 0.15 180 / 0.3); /* Teal sidebar ring */
+  --skeleton-base: oklch(0.92 0 0);
+  --skeleton-highlight: oklch(0.98 0 0);
 }
 
 .dark {
@@ -73,6 +75,8 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+  --skeleton-base: oklch(0.28 0 0);
+  --skeleton-highlight: oklch(0.36 0 0);
 }
 
 @theme inline {
@@ -123,4 +127,19 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.skeleton-shimmer {
+  background-image: linear-gradient(90deg, var(--skeleton-base), var(--skeleton-highlight), var(--skeleton-base));
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer { animation: none; }
 }

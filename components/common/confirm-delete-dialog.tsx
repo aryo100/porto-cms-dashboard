@@ -19,7 +19,7 @@ interface ConfirmDeleteDialogProps {
   title: string
   description: React.ReactNode
   confirmLabel: string
-  onConfirm: () => void
+  onConfirm: () => Promise<void>
 }
 
 export function ConfirmDeleteDialog({
@@ -31,13 +31,19 @@ export function ConfirmDeleteDialog({
   onConfirm,
 }: ConfirmDeleteDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleConfirm = async () => {
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 400))
-    onConfirm()
-    onOpenChange(false)
-    setLoading(false)
+    setError("")
+    try {
+      await onConfirm()
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menghapus data")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -47,10 +53,11 @@ export function ConfirmDeleteDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleConfirm}
+            onClick={(event) => { event.preventDefault(); void handleConfirm() }}
             disabled={loading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

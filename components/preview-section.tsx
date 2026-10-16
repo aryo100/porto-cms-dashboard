@@ -1,51 +1,41 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Code, Palette, Layout, Clock } from "lucide-react"
+import { Clock, Layout } from "lucide-react"
+import { apiRequest } from "@/lib/api-client"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const previewSections = [
-  {
-    title: "Hero Section",
-    description: "Main landing area with introduction",
-    icon: Layout,
-    lastUpdated: "Updated Jul 15, 2024",
-  },
-  {
-    title: "Tech Stack",
-    description: "Skills and technologies carousel",
-    icon: Code,
-    lastUpdated: "Updated Jul 10, 2024",
-  },
-  {
-    title: "Project Grid",
-    description: "Featured projects showcase",
-    icon: Palette,
-    lastUpdated: "Updated Jul 12, 2024",
-  },
-]
+interface PageSummary { page: string; updatedAt: string }
 
 export function PreviewSection() {
+  const [pages, setPages] = useState<PageSummary[]>([])
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    void apiRequest<{ data: PageSummary[] }>("/content")
+      .then((result) => { if (active) setPages(result.data) })
+      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Gagal memuat halaman") })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Portfolio Preview</CardTitle>
-      </CardHeader>
+      <CardHeader><CardTitle>Portfolio Pages</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        {previewSections.map((section) => (
-          <div key={section.title} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10">
-                <section.icon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <div className="font-medium">{section.title}</div>
-                <div className="text-sm text-muted-foreground">{section.description}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" />
-              {section.lastUpdated}
-            </div>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {loading && <div role="status" aria-label="Memuat halaman portfolio" className="space-y-4">
+          <span className="sr-only">Memuat halaman portfolio...</span>
+          {Array.from({ length: 4 }, (_, index) => <div key={index} className="flex items-center gap-3 rounded-lg border p-3"><Skeleton className="h-9 w-9" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-3 w-16" /></div>)}
+        </div>}
+        {!loading && !error && pages.length === 0 && <p className="text-sm text-muted-foreground">Belum ada halaman portfolio.</p>}
+        {pages.map((page) => (
+          <div key={page.page} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+            <div className="flex items-center gap-3"><div className="p-2 rounded-md bg-primary/10"><Layout className="h-5 w-5 text-primary" /></div><div className="font-medium capitalize">{page.page}</div></div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5" />{new Date(page.updatedAt).toLocaleDateString()}</div>
           </div>
         ))}
       </CardContent>

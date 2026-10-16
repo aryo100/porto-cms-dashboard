@@ -16,6 +16,7 @@ import { IconLink } from "@/components/common/icon-link"
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog"
 import { ProjectFormDialog } from "@/components/projects/project-form-dialog"
 import { useCMSStore } from "@/lib/store"
+import { apiAssetUrl } from "@/lib/api-client"
 import {
   Plus,
   ArrowUpDown,
@@ -41,7 +42,7 @@ interface Project {
   tags: string[]
 }
 
-const categories = ["All", "Web Development", "Mobile App", "Desktop App", "API", "Other"]
+const categories = ["All", "Web Development", "Mobile App", "Desktop App", "API", "Open Source", "Other"]
 const statusOptions = ["All", "Completed", "Upcoming", "Legacy"]
 const sortOptions = ["Newest", "Oldest", "Title A-Z", "Title Z-A"]
 
@@ -123,12 +124,12 @@ export default function ProjectsPage() {
   const completedProjects = (projects || []).filter((project) => project.status === "Completed")
   const upcomingProjects = (projects || []).filter((project) => project.status === "Upcoming")
 
-  const handleSaveProject = (projectData: any) => {
+  const handleSaveProject = async (projectData: any) => {
     const { techStack, ...data } = projectData
     if (editingProject) {
-      updateProject(editingProject.id, data)
+      await updateProject(editingProject.id, data)
     } else {
-      addProject(data)
+      await addProject(data)
     }
     setEditingProject(undefined)
   }
@@ -142,9 +143,9 @@ export default function ProjectsPage() {
     setDeleteDialog({ open: true, project })
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteDialog.project) {
-      deleteProject(deleteDialog.project.id)
+      await deleteProject(deleteDialog.project.id)
     }
     setDeleteDialog({ open: false, project: null })
   }
@@ -168,12 +169,7 @@ export default function ProjectsPage() {
           <StatCard
             title="Total Projects"
             value={(projects || []).length}
-            footer={
-              <>
-                <span className="text-primary font-medium">+2</span>
-                {" from last month"}
-              </>
-            }
+            footer="Projects in porto-service"
             icon={FolderOpen}
           />
           <StatCard title="Completed" value={completedProjects.length} footer="Successfully delivered" icon={TrendingUp} />
@@ -234,8 +230,12 @@ export default function ProjectsPage() {
                   >
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted">
-                          <FolderOpen className="h-6 w-6 text-primary" />
+                        <div className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                          {project.image != "" ? (
+                            <img src={apiAssetUrl(project.image)} alt={`Gambar ${project.title}`} className="h-full w-full object-cover" />
+                          ) : (
+                            <FolderOpen className="h-6 w-6 text-primary" />
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -298,12 +298,12 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
 
-        <ProjectFormDialog
+        {isFormOpen && <ProjectFormDialog
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
           project={editingProject}
           onSave={handleSaveProject}
-        />
+        />}
 
         <ConfirmDeleteDialog
           open={deleteDialog.open}

@@ -33,7 +33,7 @@ interface EducationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   education?: Education
-  onSave: (education: Education) => void
+  onSave: (education: Education) => Promise<void>
 }
 
 export function EducationDialog({ open, onOpenChange, education, onSave }: EducationDialogProps) {
@@ -52,17 +52,20 @@ export function EducationDialog({ open, onOpenChange, education, onSave }: Educa
   const [newAchievement, setNewAchievement] = useState("")
   const [newCourse, setNewCourse] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    onSave({
-      ...formData,
-      gpa: formData.gpa || null,
-    })
-    onOpenChange(false)
-    setLoading(false)
+    setError("")
+    try {
+      await onSave({ ...formData, gpa: formData.gpa || null })
+      onOpenChange(false)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pendidikan")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const addAchievement = () => {
@@ -233,6 +236,7 @@ export function EducationDialog({ open, onOpenChange, education, onSave }: Educa
             </div>
           </div>
 
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel

@@ -88,11 +88,11 @@ export default function BlogPage() {
     undefined as { title: string; words: number } | undefined,
   )
 
-  const handleSavePost = (postData: any) => {
+  const handleSavePost = async (postData: any) => {
     if (editingPost) {
-      updateBlogPost(editingPost.id, postData)
+      await updateBlogPost(editingPost.id, postData)
     } else {
-      addBlogPost(postData)
+      await addBlogPost(postData)
     }
     setEditingPost(undefined)
   }
@@ -106,9 +106,9 @@ export default function BlogPage() {
     setDeleteDialog({ open: true, post })
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteDialog.post) {
-      deleteBlogPost(deleteDialog.post.id)
+      await deleteBlogPost(deleteDialog.post.id)
     }
     setDeleteDialog({ open: false, post: null })
   }
@@ -198,7 +198,7 @@ export default function BlogPage() {
           </CardContent>
         </Card>
 
-        <BlogFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} post={editingPost} onSave={handleSavePost} />
+        {isFormOpen && <BlogFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} post={editingPost} onSave={handleSavePost} />}
 
         <ConfirmDeleteDialog
           open={deleteDialog.open}
