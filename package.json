@@ -66,6 +66,10 @@
     "zod": "3.25.67",
     "zustand": "latest"
   },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "4.1.17",
+    "lightningcss-linux-x64-gnu": "1.30.2"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
