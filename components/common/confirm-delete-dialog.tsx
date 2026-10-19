@@ -40,7 +40,7 @@ export function ConfirmDeleteDialog({
       await onConfirm()
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menghapus data")
+      setError(cause instanceof Error ? cause.message : "Failed to delete item")
     } finally {
       setLoading(false)
     }

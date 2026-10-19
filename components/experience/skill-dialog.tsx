@@ -61,7 +61,7 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
       await onSave(formData)
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan skill")
+      setError(cause instanceof Error ? cause.message : "Failed to save skill")
     } finally {
       setLoading(false)
     }
@@ -125,7 +125,7 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="show-on-portfolio">Tampilkan di Porto</Label>
+            <Label htmlFor="show-on-portfolio">Show on portfolio</Label>
             <Switch id="show-on-portfolio" checked={formData.showOnPortfolio} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, showOnPortfolio: checked }))} />
           </div>
 

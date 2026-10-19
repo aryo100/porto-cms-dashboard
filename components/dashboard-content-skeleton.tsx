@@ -64,8 +64,8 @@ export function DashboardContentSkeleton({ pathname }: DashboardContentSkeletonP
   const statCount = isExperience ? 4 : 3
 
   return (
-    <div role="status" aria-label="Memuat konten CMS" className="space-y-6" aria-busy="true">
-      <span className="sr-only">Memuat konten dari porto-service...</span>
+    <div role="status" aria-label="Loading CMS content" className="space-y-6" aria-busy="true">
+      <span className="sr-only">Loading content...</span>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-3"><Skeleton className="h-8 w-48" /><Skeleton className="h-4 w-72 max-w-full" /></div>
         {!isDashboard && <Skeleton className="h-9 w-36" />}

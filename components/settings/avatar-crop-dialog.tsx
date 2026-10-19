@@ -51,13 +51,13 @@ export function AvatarCropDialog({ file, busy, onClose, onCrop }: AvatarCropDial
       canvas.width = 400
       canvas.height = 400
       const context = canvas.getContext("2d")
-      if (!context) throw new Error("Browser tidak mendukung crop gambar")
+      if (!context) throw new Error("Image cropping is not supported in this browser")
       context.drawImage(imageRef.current, -left / scale, -top / scale, SIZE / scale, SIZE / scale, 0, 0, 400, 400)
-      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Gagal memproses gambar")), "image/png"))
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Failed to process image")), "image/png"))
       await onCrop(new File([blob], "avatar.png", { type: "image/png" }))
       onClose()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal memotong gambar")
+      setError(cause instanceof Error ? cause.message : "Failed to crop image")
     }
   }
 
@@ -66,7 +66,7 @@ export function AvatarCropDialog({ file, busy, onClose, onCrop }: AvatarCropDial
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Atur crop avatar</DialogTitle>
-          <DialogDescription>Geser gambar dan atur zoom hingga bagian yang diinginkan masuk dalam kotak 1:1.</DialogDescription>
+          <DialogDescription>Move the image and adjust the zoom until the desired area fits within the square.</DialogDescription>
         </DialogHeader>
         <div
           className="relative mx-auto aspect-square w-full max-w-[320px] touch-none overflow-hidden rounded-md bg-muted cursor-grab active:cursor-grabbing"
@@ -87,8 +87,8 @@ export function AvatarCropDialog({ file, busy, onClose, onCrop }: AvatarCropDial
         </div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>Batal</Button>
-          <Button onClick={() => { void crop() }} disabled={busy || !dimensions.width}>{busy ? "Mengunggah..." : "Crop & Upload"}</Button>
+          <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button onClick={() => { void crop() }} disabled={busy || !dimensions.width}>{busy ? "Uploading..." : "Crop & Upload"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

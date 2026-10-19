@@ -78,7 +78,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
       await discardDrafts()
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menghapus gambar sementara")
+      setError(cause instanceof Error ? cause.message : "Failed to remove temporary image")
     }
   }
 
@@ -92,7 +92,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
       await discardDrafts()
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan project")
+      setError(cause instanceof Error ? cause.message : "Failed to save project")
     } finally {
       setLoading(false)
     }
@@ -110,7 +110,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
       await discardDrafts(uploaded.url)
       setFormData((prev) => ({ ...prev, image: uploaded.url }))
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal mengunggah gambar")
+      setError(cause instanceof Error ? cause.message : "Failed to upload image")
     } finally {
       setLoading(false)
       e.target.value = ""
@@ -128,7 +128,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
         await apiDeleteUpload(formData.image)
         draftUploads.current.delete(formData.image)
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Gagal menghapus gambar")
+        setError(cause instanceof Error ? cause.message : "Failed to remove image")
         setLoading(false)
         return
       }

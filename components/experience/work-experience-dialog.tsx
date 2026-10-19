@@ -68,7 +68,7 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
       await onSave(formData)
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pengalaman kerja")
+      setError(cause instanceof Error ? cause.message : "Failed to save work experience")
     } finally {
       setLoading(false)
     }

@@ -54,7 +54,7 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
       await onSave({ ...formData, url: formData.url || null })
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pencapaian")
+      setError(cause instanceof Error ? cause.message : "Failed to save achievement")
     } finally {
       setLoading(false)
     }

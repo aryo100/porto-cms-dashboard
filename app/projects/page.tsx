@@ -169,7 +169,7 @@ export default function ProjectsPage() {
           <StatCard
             title="Total Projects"
             value={(projects || []).length}
-            footer="Projects in porto-service"
+            footer="Portfolio projects"
             icon={FolderOpen}
           />
           <StatCard title="Completed" value={completedProjects.length} footer="Successfully delivered" icon={TrendingUp} />
@@ -232,7 +232,7 @@ export default function ProjectsPage() {
                       <div className="flex items-center gap-3">
                         <div className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                           {project.image != "" ? (
-                            <img src={apiAssetUrl(project.image)} alt={`Gambar ${project.title}`} className="h-full w-full object-cover" />
+                            <img src={apiAssetUrl(project.image)} alt={`${project.title} image`} className="h-full w-full object-cover" />
                           ) : (
                             <FolderOpen className="h-6 w-6 text-primary" />
                           )}

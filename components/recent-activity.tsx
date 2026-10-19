@@ -28,7 +28,7 @@ export function RecentActivity() {
     let active = true
     void apiRequest<{ data: ActivityItem[] }>("/activity?limit=8")
       .then((result) => { if (active) setItems(result.data) })
-      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Gagal memuat aktivitas") })
+      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Failed to load activity") })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
@@ -44,11 +44,11 @@ export function RecentActivity() {
       <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
       <CardContent>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {loading && <div role="status" aria-label="Memuat aktivitas" className="space-y-4">
-          <span className="sr-only">Memuat aktivitas...</span>
+        {loading && <div role="status" aria-label="Loading activity" className="space-y-4">
+          <span className="sr-only">Loading activity...</span>
           {Array.from({ length: 4 }, (_, index) => <div key={index} className="flex items-center gap-3 border-b pb-4"><div className="flex-1 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-24" /></div><Skeleton className="h-6 w-16" /></div>)}
         </div>}
-        {!loading && !error && items.length === 0 && <p className="text-sm text-muted-foreground">Belum ada aktivitas.</p>}
+        {!loading && !error && items.length === 0 && <p className="text-sm text-muted-foreground">No recent activity yet.</p>}
         {items.length > 0 && <Table>
           <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead className="w-[40px]" /></TableRow></TableHeader>
           <TableBody>{items.map((item) => (

@@ -35,7 +35,7 @@ export default function LoginPage() {
     if (result.ok) {
       router.replace("/")
     } else {
-      setError(result.error || "Login gagal")
+      setError(result.error || "Login failed")
     }
   }
 
@@ -50,7 +50,7 @@ export default function LoginPage() {
             <span className="font-semibold">Portfolio CMS</span>
           </div>
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Masuk untuk mengelola konten portfolio Anda</CardDescription>
+          <CardDescription>Sign in to manage your portfolio content</CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">

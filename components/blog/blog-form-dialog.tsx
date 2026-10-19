@@ -66,7 +66,7 @@ export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDia
       await onSave({ title: formData.title, slug, date: formData.date, description: formData.description, content })
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan artikel")
+      setError(cause instanceof Error ? cause.message : "Failed to save article")
     } finally {
       setLoading(false)
     }

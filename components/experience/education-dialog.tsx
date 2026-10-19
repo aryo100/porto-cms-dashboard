@@ -62,7 +62,7 @@ export function EducationDialog({ open, onOpenChange, education, onSave }: Educa
       await onSave({ ...formData, gpa: formData.gpa || null })
       onOpenChange(false)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pendidikan")
+      setError(cause instanceof Error ? cause.message : "Failed to save education")
     } finally {
       setLoading(false)
     }

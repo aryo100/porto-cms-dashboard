@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       hasHydrated: false,
       login: async (email, password) => {
-        if (!apiUrl) return { ok: false, error: "NEXT_PUBLIC_API_URL belum dikonfigurasi" }
+        if (!apiUrl) return { ok: false, error: "NEXT_PUBLIC_API_URL is not configured" }
         try {
           const response = await fetch(`${apiUrl}/auth/login`, {
             method: "POST",
@@ -30,13 +30,13 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ email: email.trim(), password }),
           })
           if (response.status === 401) return { ok: false, error: "Email atau password salah" }
-          if (!response.ok) return { ok: false, error: "Login gagal. Coba lagi." }
+          if (!response.ok) return { ok: false, error: "Login failed. Please try again." }
           const result = (await response.json()) as AuthResponse
-          if (!result.token || !result.user) return { ok: false, error: "Respons login tidak valid" }
+          if (!result.token || !result.user) return { ok: false, error: "Invalid login response" }
           set({ user: result.user, token: result.token, isAuthenticated: true })
           return { ok: true }
         } catch {
-          return { ok: false, error: "Tidak dapat terhubung ke API" }
+          return { ok: false, error: "Unable to connect to the server" }
         }
       },
 

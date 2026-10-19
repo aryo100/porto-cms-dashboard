@@ -89,9 +89,9 @@ export default function SettingsPage() {
       draftUploads.current.delete(profileData.avatar)
       if (profileData.cv) draftUploads.current.delete(profileData.cv.url)
       await discardDrafts()
-      setMessage("Perubahan tersimpan di porto-service")
+      setMessage("Changes saved successfully")
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal menyimpan pengaturan")
+      setError(cause instanceof Error ? cause.message : "Failed to save settings")
     } finally {
       setSaving(false)
     }
@@ -106,9 +106,9 @@ export default function SettingsPage() {
       draftUploads.current.add(uploaded.url)
       await discardDrafts([uploaded.url, profileData.cv?.url ?? ""])
       setProfileData((current) => ({ ...current, avatar: uploaded.url }))
-      setMessage("Foto terunggah. Klik Save Changes untuk menyimpan profil.")
+      setMessage("Photo uploaded. Click Save Changes to update your profile.")
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal mengunggah foto")
+      setError(cause instanceof Error ? cause.message : "Failed to upload photo")
       throw cause
     } finally {
       setUploading(false)
@@ -122,11 +122,11 @@ export default function SettingsPage() {
       const image = new Image()
       image.src = url
       await image.decode()
-      if (!image.naturalWidth || !image.naturalHeight) throw new Error("Gambar tidak valid")
+      if (!image.naturalWidth || !image.naturalHeight) throw new Error("Invalid image")
       if (image.naturalWidth !== image.naturalHeight) setCropFile(file)
       else await uploadAvatar(file)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal membaca gambar")
+      setError(cause instanceof Error ? cause.message : "Failed to read image")
     } finally {
       URL.revokeObjectURL(url)
     }
@@ -140,14 +140,14 @@ export default function SettingsPage() {
         await apiDeleteUpload(profileData.avatar)
         draftUploads.current.delete(profileData.avatar)
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Gagal menghapus foto")
+        setError(cause instanceof Error ? cause.message : "Failed to remove photo")
         setUploading(false)
         return
       }
       setUploading(false)
     }
     setProfileData((current) => ({ ...current, avatar: "" }))
-    setMessage("Klik Save Changes untuk menghapus foto dari profil.")
+    setMessage("Click Save Changes to remove the photo from your profile.")
   }
 
   const uploadCv = async (file?: File) => {
@@ -158,7 +158,7 @@ export default function SettingsPage() {
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError("Ukuran CV maksimal 10 MB")
+      setError("CV must be 10 MB or smaller")
       return
     }
     setUploading(true)
@@ -167,9 +167,9 @@ export default function SettingsPage() {
       draftUploads.current.add(uploaded.url)
       await discardDrafts([uploaded.url, profileData.avatar])
       setProfileData((current) => ({ ...current, cv: { url: uploaded.url, name: uploaded.name, size: uploaded.size } }))
-      setMessage("CV terunggah. Klik Save Changes untuk menyimpannya.")
+      setMessage("CV uploaded. Click Save Changes to save it.")
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal mengunggah CV")
+      setError(cause instanceof Error ? cause.message : "Failed to upload CV")
     } finally {
       setUploading(false)
     }
@@ -185,14 +185,14 @@ export default function SettingsPage() {
         await apiDeleteUpload(url)
         draftUploads.current.delete(url)
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Gagal menghapus CV")
+        setError(cause instanceof Error ? cause.message : "Failed to remove CV")
         setUploading(false)
         return
       }
       setUploading(false)
     }
     setProfileData((current) => ({ ...current, cv: null }))
-    setMessage("Klik Save Changes untuk menghapus CV dari profil.")
+    setMessage("Click Save Changes to remove the CV from your profile.")
   }
 
   const exportData = () => {
@@ -297,7 +297,7 @@ export default function SettingsPage() {
                       </>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">PDF, maksimal 10 MB. Setelah disimpan, CV tersedia untuk diunduh dari porto.</p>
+                  <p className="text-sm text-muted-foreground">PDF, up to 10 MB. Once saved, your CV will be available for download on your portfolio.</p>
                 </div>
 
                 <Separator />

@@ -40,7 +40,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {loaded ? children : error ? (
         <div role="alert" className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
           <p className="text-destructive">{error}</p>
-          <button className="text-primary underline" onClick={() => void loadAll()}>Coba lagi</button>
+          <button className="text-primary underline" onClick={() => void loadAll()}>Try again</button>
         </div>
       ) : <DashboardContentSkeleton pathname={pathname} />}
     </DashboardShell>

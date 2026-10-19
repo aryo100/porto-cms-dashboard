@@ -17,7 +17,7 @@ export function PreviewSection() {
     let active = true
     void apiRequest<{ data: PageSummary[] }>("/content")
       .then((result) => { if (active) setPages(result.data) })
-      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Gagal memuat halaman") })
+      .catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Failed to load pages") })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
@@ -27,11 +27,11 @@ export function PreviewSection() {
       <CardHeader><CardTitle>Portfolio Pages</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {loading && <div role="status" aria-label="Memuat halaman portfolio" className="space-y-4">
-          <span className="sr-only">Memuat halaman portfolio...</span>
+        {loading && <div role="status" aria-label="Loading portfolio pages" className="space-y-4">
+          <span className="sr-only">Loading portfolio pages...</span>
           {Array.from({ length: 4 }, (_, index) => <div key={index} className="flex items-center gap-3 rounded-lg border p-3"><Skeleton className="h-9 w-9" /><Skeleton className="h-4 flex-1" /><Skeleton className="h-3 w-16" /></div>)}
         </div>}
-        {!loading && !error && pages.length === 0 && <p className="text-sm text-muted-foreground">Belum ada halaman portfolio.</p>}
+        {!loading && !error && pages.length === 0 && <p className="text-sm text-muted-foreground">No portfolio pages yet.</p>}
         {pages.map((page) => (
           <div key={page.page} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
             <div className="flex items-center gap-3"><div className="p-2 rounded-md bg-primary/10"><Layout className="h-5 w-5 text-primary" /></div><div className="font-medium capitalize">{page.page}</div></div>

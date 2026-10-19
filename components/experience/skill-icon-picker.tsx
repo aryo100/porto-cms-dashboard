@@ -21,16 +21,16 @@ export function SkillIconPicker({ value, onChange }: { value: string; onChange: 
   return (
     <Popover open={open} onOpenChange={(next) => { setOpen(next); if (!next) setSearch("") }}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" role="combobox" aria-expanded={open} aria-label="Pilih ikon skill" className="w-full justify-between font-normal">
+        <Button type="button" variant="outline" role="combobox" aria-expanded={open} aria-label="Choose a skill icon" className="w-full justify-between font-normal">
           <span className="flex items-center gap-2"><SkillIcon name={value} className="h-4 w-4" />{iconLabel(value)}</span>
           <ChevronsUpDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
         <Command shouldFilter={false}>
-          <CommandInput value={search} onValueChange={setSearch} placeholder="Cari ikon Lucide..." />
+          <CommandInput value={search} onValueChange={setSearch} placeholder="Search Lucide icons..." />
           <CommandList>
-            <CommandEmpty>Ikon tidak ditemukan.</CommandEmpty>
+            <CommandEmpty>No icons found.</CommandEmpty>
             {matches.map((name) => (
               <CommandItem key={name} value={name} onSelect={() => { onChange(name); setOpen(false) }}>
                 <SkillIcon name={name} className="h-4 w-4" />

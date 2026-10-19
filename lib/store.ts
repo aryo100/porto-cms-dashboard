@@ -140,7 +140,7 @@ export const useCMSStore = create<CMSStore>()((set, get) => ({
         loaded: true, loading: false,
       })
     } catch (error) {
-      set({ loading: false, error: error instanceof Error ? error.message : "Gagal memuat data CMS" })
+      set({ loading: false, error: error instanceof Error ? error.message : "Failed to load CMS data" })
     }
   },
   reset: () => set({ ...emptyContent, settings: null, site: { website: "" }, profile: { name: "", email: "" }, loading: false, loaded: false, error: null }),

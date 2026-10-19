@@ -10,7 +10,7 @@ export function apiAssetUrl(url: string): string {
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  if (!baseUrl) throw new Error("NEXT_PUBLIC_API_URL belum dikonfigurasi")
+  if (!baseUrl) throw new Error("NEXT_PUBLIC_API_URL is not configured")
 
   const token = useAuthStore.getState().token
   const headers = new Headers(init.headers)
@@ -23,7 +23,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     if (response.status === 401) {
       useAuthStore.setState({ user: null, token: null, isAuthenticated: false })
     }
-    throw new Error(error?.error || `Permintaan API gagal (${response.status})`)
+    throw new Error(error?.error || `API request failed (${response.status})`)
   }
   return response.json() as Promise<T>
 }
