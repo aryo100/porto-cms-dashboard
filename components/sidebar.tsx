@@ -31,9 +31,9 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
           <div className="flex h-16 shrink-0 items-center">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">P</span>
+                <Home className="h-4 w-4 text-primary-foreground" aria-hidden="true" />
               </div>
-              <span className="font-semibold text-sidebar-foreground">Portfolio CMS</span>
+              <span className="font-semibold text-sidebar-foreground">Porto Control</span>
             </div>
           </div>
 
@@ -80,9 +80,9 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
           <div className="flex h-16 shrink-0 items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">P</span>
+                <Home className="h-4 w-4 text-primary-foreground" aria-hidden="true" />
               </div>
-              <span className="font-semibold text-sidebar-foreground">Portfolio CMS</span>
+              <span className="font-semibold text-sidebar-foreground">Porto Control</span>
             </div>
             <Button
               variant="ghost"

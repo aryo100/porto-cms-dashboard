@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, LogIn } from "lucide-react"
+import { Home, Loader2, LogIn } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 
 export default function LoginPage() {
@@ -45,9 +45,9 @@ export default function LoginPage() {
         <CardHeader className="space-y-1">
           <div className="mb-2 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="text-sm font-bold text-primary-foreground">P</span>
+              <Home className="h-4 w-4 text-primary-foreground" aria-hidden="true" />
             </div>
-            <span className="font-semibold">Portfolio CMS</span>
+            <span className="font-semibold">Porto Control</span>
           </div>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>Sign in to manage your portfolio content</CardDescription>

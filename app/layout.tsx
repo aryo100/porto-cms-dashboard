@@ -5,11 +5,10 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'Porto Control',
+  description: 'Manage your portfolio content',
   icons: {
-    icon: '/icon.svg',
+    icon: '/porto-control-mark.svg',
   },
 }
 

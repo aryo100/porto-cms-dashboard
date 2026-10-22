@@ -181,6 +181,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           <Menu className="h-5 w-5" />
           <span className="sr-only">Open sidebar</span>
         </Button>
+        <span className="shrink-0 text-sm font-semibold text-foreground lg:hidden">Porto Control</span>
 
         {/* Search Bar */}
         <div ref={searchRef} className="relative flex-1 max-w-md">
