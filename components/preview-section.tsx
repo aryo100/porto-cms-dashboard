@@ -33,9 +33,9 @@ export function PreviewSection() {
         </div>}
         {!loading && !error && pages.length === 0 && <p className="text-sm text-muted-foreground">No portfolio pages yet.</p>}
         {pages.map((page) => (
-          <div key={page.page} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-            <div className="flex items-center gap-3"><div className="p-2 rounded-md bg-primary/10"><Layout className="h-5 w-5 text-primary" /></div><div className="font-medium capitalize">{page.page}</div></div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5" />{new Date(page.updatedAt).toLocaleDateString()}</div>
+          <div key={page.page} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex min-w-0 items-center gap-3"><div className="shrink-0 rounded-md bg-primary/10 p-2"><Layout className="h-5 w-5 text-primary" /></div><div className="truncate font-medium capitalize" title={page.page}>{page.page}</div></div>
+            <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3.5 w-3.5" />{new Date(page.updatedAt).toLocaleDateString()}</div>
           </div>
         ))}
       </CardContent>

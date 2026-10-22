@@ -49,13 +49,13 @@ export function RecentActivity() {
           {Array.from({ length: 4 }, (_, index) => <div key={index} className="flex items-center gap-3 border-b pb-4"><div className="flex-1 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-24" /></div><Skeleton className="h-6 w-16" /></div>)}
         </div>}
         {!loading && !error && items.length === 0 && <p className="text-sm text-muted-foreground">No recent activity yet.</p>}
-        {items.length > 0 && <Table>
-          <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead className="w-[40px]" /></TableRow></TableHeader>
+        {items.length > 0 && <Table className="min-w-[420px] table-fixed">
+          <TableHeader><TableRow><TableHead className="w-[46%]">Title</TableHead><TableHead className="w-[24%]">Type</TableHead><TableHead className="w-[24%]">Status</TableHead><TableHead className="w-[6%]" /></TableRow></TableHeader>
           <TableBody>{items.map((item) => (
             <TableRow key={`${item.type}-${item.id}`} className="h-16 cursor-pointer transition-colors hover:bg-accent/50" onClick={() => router.push(targetFor(item))}>
-              <TableCell><div className="font-medium">{item.title}</div><div className="text-sm text-muted-foreground">{item.lastModified}</div></TableCell>
-              <TableCell><Badge variant="outline">{item.type}</Badge></TableCell>
-              <TableCell><Badge variant="secondary">{item.status}</Badge></TableCell>
+              <TableCell><div className="truncate font-medium" title={item.title}>{item.title}</div><div className="truncate text-sm text-muted-foreground">{item.lastModified}</div></TableCell>
+              <TableCell><Badge variant="outline" className="max-w-full"><span className="truncate" title={item.type}>{item.type}</span></Badge></TableCell>
+              <TableCell><Badge variant="secondary" className="max-w-full"><span className="truncate" title={item.status}>{item.status}</span></Badge></TableCell>
               <TableCell><ChevronRight className="h-4 w-4 text-muted-foreground" /></TableCell>
             </TableRow>
           ))}</TableBody>

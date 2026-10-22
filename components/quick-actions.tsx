@@ -25,14 +25,14 @@ function QuickActionTile({ title, description, icon: Icon, href, external }: Qui
       <Link
         href={href}
         {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-        className="flex items-center gap-3"
+        className="flex min-w-0 items-center gap-3"
       >
         <div className="p-2 rounded-md bg-primary/10 shrink-0">
           <Icon className="h-5 w-5 text-primary" />
         </div>
-        <div className="text-left">
-          <div className="font-medium">{title}</div>
-          <div className="text-sm text-muted-foreground">{description}</div>
+        <div className="min-w-0 text-left">
+          <div className="truncate font-medium" title={title}>{title}</div>
+          <div className="truncate text-sm text-muted-foreground" title={description}>{description}</div>
         </div>
       </Link>
     </Button>

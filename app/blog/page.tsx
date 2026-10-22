@@ -157,13 +157,13 @@ export default function BlogPage() {
           </CardHeader>
 
           <CardContent>
-            <Table>
+            <Table className="min-w-[560px] table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Post</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[50%]">Post</TableHead>
+                  <TableHead className="w-[25%]">Slug</TableHead>
+                  <TableHead className="w-[15%]">Date</TableHead>
+                  <TableHead className="w-[10%] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -174,13 +174,13 @@ export default function BlogPage() {
                     className={`h-16 ${focusedId === post.id ? "bg-primary/10" : ""}`}
                   >
                     <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-medium text-foreground line-clamp-1">{post.title}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-2 max-w-md">{post.description}</p>
+                      <div className="min-w-0 space-y-1">
+                        <p className="truncate font-medium text-foreground" title={post.title}>{post.title}</p>
+                        <p className="line-clamp-2 max-w-md break-all whitespace-normal text-sm text-muted-foreground" title={post.description}>{post.description}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm text-muted-foreground">/{post.slug}</p>
+                      <p className="truncate text-sm text-muted-foreground" title={`/${post.slug}`}>/{post.slug}</p>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{post.date}</TableCell>
                     <TableCell className="text-right">

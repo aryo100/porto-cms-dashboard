@@ -210,15 +210,15 @@ export default function ProjectsPage() {
           </CardHeader>
 
           <CardContent>
-            <Table>
+            <Table className="min-w-[820px] table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Tech Stack</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[30%]">Project</TableHead>
+                  <TableHead className="w-[12%]">Category</TableHead>
+                  <TableHead className="w-[18%]">Tech Stack</TableHead>
+                  <TableHead className="w-[10%]">Status</TableHead>
+                  <TableHead className="w-[12%]">Created</TableHead>
+                  <TableHead className="w-[18%] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -229,7 +229,7 @@ export default function ProjectsPage() {
                     className={`h-16 ${focusedId === project.id ? "bg-primary/10" : ""}`}
                   >
                     <TableCell>
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                           {project.image != "" ? (
                             <img src={apiAssetUrl(project.image)} alt={`${project.title} image`} className="h-full w-full object-cover" />
@@ -239,22 +239,22 @@ export default function ProjectsPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-foreground truncate">{project.title}</p>
+                            <p className="truncate font-medium text-foreground" title={project.title}>{project.title}</p>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">{project.description}</p>
+                          <p className="truncate text-sm text-muted-foreground" title={project.description}>{project.description}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{project.category}</Badge>
+                      <Badge variant="secondary" className="max-w-full"><span className="truncate" title={project.category}>{project.category}</span></Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex max-w-full flex-wrap gap-1 overflow-hidden">
                         {(project.technologies || [])
                           .slice(0, expandedTech.has(project.id) ? undefined : 2)
                           .map((tech) => (
-                            <Badge key={tech} variant="outline" className="text-xs">
-                              {tech}
+                            <Badge key={tech} variant="outline" className="max-w-full text-xs">
+                              <span className="truncate" title={tech}>{tech}</span>
                             </Badge>
                           ))}
                         {(project.technologies || []).length > 2 && (

@@ -324,16 +324,16 @@ export default function ExperiencePage() {
                           />
                         </div>
 
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-semibold text-foreground">{exp.position}</h3>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Building className="h-4 w-4" />
-                                <span>{exp.company}</span>
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <div className="flex min-w-0 items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="truncate font-semibold text-foreground" title={exp.position}>{exp.position}</h3>
+                              <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                                <Building className="h-4 w-4 shrink-0" />
+                                <span className="truncate" title={exp.company}>{exp.company}</span>
                                 <span>•</span>
-                                <MapPin className="h-4 w-4" />
-                                <span>{exp.location}</span>
+                                <MapPin className="h-4 w-4 shrink-0" />
+                                <span className="truncate" title={exp.location}>{exp.location}</span>
                               </div>
                               <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                                 <Calendar className="h-4 w-4" />
@@ -365,15 +365,15 @@ export default function ExperiencePage() {
                             />
                           </div>
 
-                          <p className="text-sm text-muted-foreground">{exp.description}</p>
+                          <p className="line-clamp-3 break-all text-sm text-muted-foreground" title={exp.description}>{exp.description}</p>
 
                           <div className="space-y-2">
                             <h4 className="text-sm font-medium">Key Achievements:</h4>
                             <ul className="space-y-1">
                               {exp.achievements.map((achievement, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                <li key={i} className="flex min-w-0 items-start gap-2 text-sm text-muted-foreground">
                                   <Star className="h-3 w-3 mt-0.5 text-primary shrink-0" />
-                                  {achievement}
+                                  <span className="truncate" title={achievement}>{achievement}</span>
                                 </li>
                               ))}
                             </ul>
@@ -381,8 +381,8 @@ export default function ExperiencePage() {
 
                           <div className="flex flex-wrap gap-1">
                             {exp.technologies.map((tech) => (
-                              <Badge key={tech} variant="outline" className="text-xs">
-                                {tech}
+                              <Badge key={tech} variant="outline" className="max-w-full text-xs">
+                                <span className="truncate" title={tech}>{tech}</span>
                               </Badge>
                             ))}
                           </div>
@@ -422,16 +422,16 @@ export default function ExperiencePage() {
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
                         <GraduationCap className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-foreground">{edu.degree}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Building className="h-4 w-4" />
-                              <span>{edu.institution}</span>
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex min-w-0 items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="truncate font-semibold text-foreground" title={edu.degree}>{edu.degree}</h3>
+                            <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                              <Building className="h-4 w-4 shrink-0" />
+                              <span className="truncate" title={edu.institution}>{edu.institution}</span>
                               <span>•</span>
-                              <MapPin className="h-4 w-4" />
-                              <span>{edu.location}</span>
+                              <MapPin className="h-4 w-4 shrink-0" />
+                              <span className="truncate" title={edu.location}>{edu.location}</span>
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                               <div className="flex items-center gap-1">
@@ -463,8 +463,8 @@ export default function ExperiencePage() {
                           <h4 className="text-sm font-medium">Achievements:</h4>
                           <div className="flex flex-wrap gap-1">
                             {edu.achievements.map((achievement, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {achievement}
+                              <Badge key={i} variant="outline" className="max-w-full text-xs">
+                                <span className="truncate" title={achievement}>{achievement}</span>
                               </Badge>
                             ))}
                           </div>
@@ -474,8 +474,8 @@ export default function ExperiencePage() {
                           <h4 className="text-sm font-medium">Relevant Coursework:</h4>
                           <div className="flex flex-wrap gap-1">
                             {edu.coursework.map((course, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs">
-                                {course}
+                              <Badge key={i} variant="secondary" className="max-w-full text-xs">
+                                <span className="truncate" title={course}>{course}</span>
                               </Badge>
                             ))}
                           </div>
@@ -515,23 +515,23 @@ export default function ExperiencePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid min-w-0 gap-4 md:grid-cols-2">
                   {filteredSkills.map((skill) => (
                     <div
                       key={skill.id}
                       id={`focus-skill-${skill.id}`}
-                      className={`space-y-2 p-4 border rounded-lg transition-colors ${
+                      className={`min-w-0 space-y-2 rounded-lg border p-4 transition-colors ${
                         focused?.type === "skills" && focused.id === skill.id
                           ? "bg-primary/10 ring-2 ring-primary/40"
                           : ""
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="flex items-center gap-2 font-medium text-foreground"><SkillIconPreview icon={skill.icon} color={skill.color} />{skill.name}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Badge variant="outline" className="text-xs">
-                              {skill.category}
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="flex min-w-0 items-center gap-2 font-medium text-foreground"><SkillIconPreview icon={skill.icon} color={skill.color} /><span className="truncate" title={skill.name}>{skill.name}</span></h3>
+                          <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline" className="max-w-[55%] text-xs">
+                              <span className="truncate" title={skill.category}>{skill.category}</span>
                             </Badge>
                             <span>•</span>
                             <span>{skill.years} years</span>
@@ -570,13 +570,13 @@ export default function ExperiencePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
+                <Table className="min-w-[560px] table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Achievement</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="w-[45%]">Achievement</TableHead>
+                      <TableHead className="w-[25%]">Type</TableHead>
+                      <TableHead className="w-[15%]">Date</TableHead>
+                      <TableHead className="w-[15%] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -589,10 +589,10 @@ export default function ExperiencePage() {
                         }
                       >
                         <TableCell>
-                          <div className="space-y-1">
-                            <p className="font-medium text-foreground">{achievement.title}</p>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>{achievement.issuer}</span>
+                          <div className="min-w-0 space-y-1">
+                            <p className="truncate font-medium text-foreground" title={achievement.title}>{achievement.title}</p>
+                            <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                              <span className="truncate" title={achievement.issuer}>{achievement.issuer}</span>
                               {achievement.url && (
                                 <IconLink href={achievement.url} icon={ExternalLink} label="Open link" />
                               )}
@@ -600,8 +600,8 @@ export default function ExperiencePage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={achievement.type === "Certification" ? "default" : "secondary"}>
-                            {achievement.type}
+                          <Badge variant={achievement.type === "Certification" ? "default" : "secondary"} className="max-w-full">
+                            <span className="truncate" title={achievement.type}>{achievement.type}</span>
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{achievement.date}</TableCell>

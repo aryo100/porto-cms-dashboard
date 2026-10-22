@@ -289,7 +289,7 @@ export default function SettingsPage() {
                     <input id="cv-upload" type="file" accept="application/pdf,.pdf" className="hidden" disabled={uploading || saving} onChange={(event) => { void uploadCv(event.target.files?.[0]); event.target.value = "" }} />
                     {profileData.cv && (
                       <>
-                        <a href={apiAssetUrl(profileData.cv.url)} target="_blank" rel="noopener noreferrer" className="text-sm underline underline-offset-4">{profileData.cv.name}</a>
+                        <a href={apiAssetUrl(profileData.cv.url)} target="_blank" rel="noopener noreferrer" className="max-w-full truncate text-sm underline underline-offset-4" title={profileData.cv.name}>{profileData.cv.name}</a>
                         <span className="text-sm text-muted-foreground">{(profileData.cv.size / 1024 / 1024).toFixed(2)} MB</span>
                         <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => { void removeCv() }} disabled={saving || uploading}>
                           <Trash2 className="h-4 w-4" /> Remove CV
