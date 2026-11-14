@@ -8,6 +8,7 @@ import { DashboardContentSkeleton } from "@/components/dashboard-content-skeleto
 import { DashboardShell } from "@/components/dashboard-shell"
 import { useAuthStore } from "@/lib/auth-store"
 import { useCMSStore } from "@/lib/store"
+import { Toaster } from "@/components/ui/sonner"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -24,6 +25,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
 
   useEffect(() => {
+    try { localStorage.removeItem("porto-control-ai-local-v1") } catch { /* Browser storage can be disabled. */ }
     if (!hasHydrated) return
     if (!isAuthenticated) {
       reset()
@@ -43,6 +45,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <button className="text-primary underline" onClick={() => void loadAll()}>Try again</button>
         </div>
       ) : <DashboardContentSkeleton pathname={pathname} />}
+      <Toaster position="top-right" richColors />
     </DashboardShell>
   )
 }

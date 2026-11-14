@@ -10,7 +10,7 @@ type Content = {
   skills: Skill[]
   achievements: Achievement[]
 }
-type ResourceKey = keyof Content
+export type ResourceKey = keyof Content
 type CMSSettings = Pick<Settings, "profile" | "siteConfig" | "seo" | "socialLinks">
 
 interface CMSStore extends Content {
@@ -42,6 +42,7 @@ interface CMSStore extends Content {
   addAchievement: (value: Partial<Achievement>) => Promise<void>
   updateAchievement: (id: number, value: Partial<Achievement>) => Promise<void>
   deleteAchievement: (id: number) => Promise<void>
+  reorderResource: (key: ResourceKey, draggedId: number, targetId: number) => Promise<void>
   updateSettings: (value: SettingsPatch) => Promise<void>
 }
 
@@ -55,12 +56,12 @@ const paths: Record<ResourceKey, string> = {
 }
 
 const fields: Record<ResourceKey, readonly string[]> = {
-  projects: ["title", "description", "status", "category", "tags", "startDate", "endDate", "client", "teamMembers", "technologies", "githubUrl", "liveUrl", "image"],
+  projects: ["title", "description", "status", "category", "tags", "startDate", "endDate", "client", "teamMembers", "technologies", "githubUrl", "liveUrl", "image", "mobileImage"],
   blogPosts: ["title", "slug", "date", "description", "content"],
   workExperience: ["company", "position", "location", "startDate", "endDate", "current", "description", "achievements", "technologies"],
   education: ["institution", "degree", "location", "startDate", "endDate", "gpa", "achievements", "coursework"],
   skills: ["name", "category", "level", "years", "color", "icon", "showOnPortfolio"],
-  achievements: ["title", "issuer", "date", "url", "type"],
+  achievements: ["title", "description", "issuer", "date", "url", "image", "logo", "type"],
 }
 
 function inputFor(key: ResourceKey, value: object): Record<string, unknown> {
@@ -72,7 +73,7 @@ function inputFor(key: ResourceKey, value: object): Record<string, unknown> {
 }
 
 function normalizeProject(row: Project): Project {
-  return { ...row, description: row.description ?? "", status: row.status ?? "", category: row.category ?? "", tags: row.tags ?? [], client: row.client ?? "", teamMembers: row.teamMembers ?? [], technologies: row.technologies ?? [], githubUrl: row.githubUrl ?? "", liveUrl: row.liveUrl ?? "", image: row.image ?? "", startDate: row.startDate?.slice(0, 10) ?? null, endDate: row.endDate?.slice(0, 10) ?? null }
+  return { ...row, description: row.description ?? "", status: row.status ?? "", category: row.category ?? "", tags: row.tags ?? [], client: row.client ?? "", teamMembers: row.teamMembers ?? [], technologies: row.technologies ?? [], githubUrl: row.githubUrl ?? "", liveUrl: row.liveUrl ?? "", image: row.image ?? "", mobileImage: row.mobileImage ?? "", startDate: row.startDate?.slice(0, 10) ?? null, endDate: row.endDate?.slice(0, 10) ?? null }
 }
 function normalizeWork(row: WorkExperience): WorkExperience {
   return { ...row, location: row.location ?? "", description: row.description ?? "", achievements: row.achievements ?? [], technologies: row.technologies ?? [], startDate: row.startDate?.slice(0, 10) ?? "", endDate: row.endDate?.slice(0, 10) ?? null }
@@ -82,6 +83,10 @@ function normalizeEducation(row: Education): Education {
 }
 function normalizeSkill(row: Skill): Skill {
   return { ...row, category: row.category ?? "", level: row.level ?? 0, years: row.years ?? 0, color: row.color ?? "#64748b", icon: row.icon ?? "code", showOnPortfolio: row.showOnPortfolio ?? false }
+}
+
+function replaceSkillName(names: string[], from: string, to: string): string[] {
+  return [...new Set(names.map((name) => name === from ? to : name))]
 }
 
 function normalize<K extends ResourceKey>(key: K, row: Content[K][number]): Content[K][number] {
@@ -96,7 +101,7 @@ const emptyContent: Content = { projects: [], blogPosts: [], workExperience: [],
 
 async function createItem<K extends ResourceKey>(key: K, value: object): Promise<void> {
   const saved = await apiRequest<Content[K][number]>(paths[key], { method: "POST", body: JSON.stringify(inputFor(key, value)) })
-  useCMSStore.setState((state) => ({ [key]: [...state[key], normalize(key, saved)] }))
+  useCMSStore.setState((state) => ({ [key]: [normalize(key, saved), ...state[key]] }))
 }
 
 async function updateItem<K extends ResourceKey>(key: K, id: number, value: object): Promise<void> {
@@ -159,11 +164,53 @@ export const useCMSStore = create<CMSStore>()((set, get) => ({
   updateEducation: (id, value) => updateItem("education", id, value),
   deleteEducation: (id) => deleteItem("education", id),
   addSkill: (value) => createItem("skills", value),
-  updateSkill: (id, value) => updateItem("skills", id, value),
-  deleteSkill: (id) => deleteItem("skills", id),
+  updateSkill: async (id, value) => {
+    const oldName = get().skills.find((skill) => skill.id === id)?.name
+    const saved = normalizeSkill(await apiRequest<Skill>(`${paths.skills}/${id}`, { method: "PATCH", body: JSON.stringify(inputFor("skills", value)) }))
+    const replacement = oldName && saved.name !== oldName ? { from: oldName, to: saved.name } : null
+    set((state) => ({
+      skills: saved.id === id
+        ? state.skills.map((skill) => skill.id === id ? saved : skill)
+        : state.skills.some((skill) => skill.id === saved.id)
+          ? state.skills.filter((skill) => skill.id !== id).map((skill) => skill.id === saved.id ? saved : skill)
+          : [saved, ...state.skills.filter((skill) => skill.id !== id)],
+      ...(replacement ? {
+        projects: state.projects.map((project) => ({ ...project, technologies: replaceSkillName(project.technologies, replacement.from, replacement.to) })),
+        workExperience: state.workExperience.map((work) => ({ ...work, technologies: replaceSkillName(work.technologies, replacement.from, replacement.to) })),
+        settings: state.settings ? { ...state.settings, profile: { ...state.settings.profile, resumeSkills: state.settings.profile.resumeSkills && replaceSkillName(state.settings.profile.resumeSkills, replacement.from, replacement.to) } } : null,
+      } : {}),
+    }))
+  },
+  deleteSkill: async (id) => {
+    const name = get().skills.find((skill) => skill.id === id)?.name
+    await apiRequest(`${paths.skills}/${id}`, { method: "DELETE" })
+    set((state) => ({
+      skills: state.skills.filter((skill) => skill.id !== id),
+      ...(name ? {
+        projects: state.projects.map((project) => ({ ...project, technologies: project.technologies.filter((item) => item !== name) })),
+        workExperience: state.workExperience.map((work) => ({ ...work, technologies: work.technologies.filter((item) => item !== name) })),
+        settings: state.settings ? { ...state.settings, profile: { ...state.settings.profile, resumeSkills: state.settings.profile.resumeSkills?.filter((item) => item !== name) } } : null,
+      } : {}),
+    }))
+  },
   addAchievement: (value) => createItem("achievements", value),
   updateAchievement: (id, value) => updateItem("achievements", id, value),
   deleteAchievement: (id) => deleteItem("achievements", id),
+  reorderResource: async (key, draggedId, targetId) => {
+    const before = get()[key]
+    const from = before.findIndex((item) => item.id === draggedId)
+    const to = before.findIndex((item) => item.id === targetId)
+    if (from < 0 || to < 0 || from === to) return
+    const next = [...before]
+    next.splice(to, 0, ...next.splice(from, 1))
+    set({ [key]: next })
+    try {
+      await apiRequest(`${paths[key]}/order`, { method: "PUT", body: JSON.stringify({ ids: next.map((item) => item.id) }) })
+    } catch (error) {
+      set({ [key]: before })
+      throw error
+    }
+  },
   updateSettings: async (value) => {
     const settings = await apiRequest<CMSSettings>("/settings", { method: "PUT", body: JSON.stringify(value) })
     set({ settings, site: { website: settings.profile?.website ?? "" }, profile: { name: settings.profile?.name ?? "", email: settings.profile?.email ?? "" } })

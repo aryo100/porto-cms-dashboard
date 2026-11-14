@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { X, Plus, Loader2 } from "lucide-react"
+import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { useAiFormHistory } from "@/lib/use-ai-form-history"
 
 interface Education {
   id?: number
@@ -37,7 +39,7 @@ interface EducationDialogProps {
 }
 
 export function EducationDialog({ open, onOpenChange, education, onSave }: EducationDialogProps) {
-  const [formData, setFormData] = useState<Education>({
+  const { value: formData, setValue: setFormData, applyAi, undoAi, redoAi, canUndo, canRedo } = useAiFormHistory<Education>({
     institution: education?.institution || "",
     degree: education?.degree || "",
     location: education?.location || "",
@@ -122,6 +124,7 @@ export function EducationDialog({ open, onOpenChange, education, onSave }: Educa
               placeholder="Bachelor of Science in Computer Science"
               required
             />
+            <AiGenerateDialog kind="education" title={formData.degree} context={{ institution: formData.institution, location: formData.location, startDate: formData.startDate, endDate: formData.endDate, achievements: formData.achievements, coursework: formData.coursework }} onApply={(draft) => applyAi((current) => ({ ...current, degree: draft.fields.degree as string, institution: draft.fields.institution as string, location: draft.fields.location as string, startDate: draft.fields.startDate as string, endDate: draft.fields.endDate as string, gpa: (draft.fields.gpa as string | undefined) ?? current.gpa, achievements: draft.fields.achievements as string[], coursework: draft.fields.coursework as string[] }))} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
           </div>
 
           <div className="space-y-2">

@@ -13,6 +13,7 @@ import { RowActions } from "@/components/common/row-actions"
 import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog"
 import { BlogFormDialog } from "@/components/blog/blog-form-dialog"
 import { useCMSStore } from "@/lib/store"
+import { SortableList, SortableTableRow, SortHandle } from "@/components/common/sortable-content"
 import { Plus, ArrowUpDown, FileText, Type, BookOpen } from "lucide-react"
 
 interface BlogPost {
@@ -26,13 +27,14 @@ interface BlogPost {
   updatedAt: string
 }
 
-const sortOptions = ["Newest", "Oldest"]
+const sortOptions = ["Display order", "Newest", "Oldest"]
 
 export default function BlogPage() {
   const { blogPosts, addBlogPost, updateBlogPost, deleteBlogPost } = useCMSStore()
 
   const [searchTerm, setSearchTerm] = useState("")
-  const [sortOption, setSortOption] = useState("Newest")
+  const [sortOption, setSortOption] = useState("Display order")
+  const reorderEnabled = sortOption === "Display order" && !searchTerm
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingPost, setEditingPost] = useState<any>(undefined)
   const [focusedId, setFocusedId] = useState<number | null>(null)
@@ -70,6 +72,7 @@ export default function BlogPage() {
   })
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
+    if (sortOption === "Display order") return blogPosts.indexOf(a) - blogPosts.indexOf(b)
     const aTime = new Date(a.createdAt).getTime()
     const bTime = new Date(b.createdAt).getTime()
     return sortOption === "Oldest" ? aTime - bTime : bTime - aTime
@@ -154,9 +157,11 @@ export default function BlogPage() {
                 />
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">{reorderEnabled ? "Drag the handle to change a post's position on the website." : "Choose Display order and clear search to rearrange rows."}</p>
           </CardHeader>
 
           <CardContent>
+            <SortableList resource="blogPosts" ids={sortedPosts.map((post) => post.id)} enabled={reorderEnabled}>
             <Table className="min-w-[560px] table-fixed">
               <TableHeader>
                 <TableRow>
@@ -168,15 +173,20 @@ export default function BlogPage() {
               </TableHeader>
               <TableBody>
                 {sortedPosts.map((post) => (
-                  <TableRow
+                  <SortableTableRow
                     key={post.id}
+                    itemId={post.id}
+                    disabled={!reorderEnabled}
                     id={`post-row-${post.id}`}
                     className={`h-16 ${focusedId === post.id ? "bg-primary/10" : ""}`}
                   >
                     <TableCell>
-                      <div className="min-w-0 space-y-1">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <SortHandle label={`Drag ${post.title} to reorder`} />
+                        <div className="min-w-0 space-y-1">
                         <p className="truncate font-medium text-foreground" title={post.title}>{post.title}</p>
                         <p className="line-clamp-2 max-w-md break-all whitespace-normal text-sm text-muted-foreground" title={post.description}>{post.description}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -191,10 +201,11 @@ export default function BlogPage() {
                         />
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </SortableTableRow>
                 ))}
               </TableBody>
             </Table>
+            </SortableList>
           </CardContent>
         </Card>
 

@@ -19,6 +19,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 import { SkillIconPicker } from "./skill-icon-picker"
+import { skillIconNames } from "@/lib/skill-icon-names"
+import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { useAiFormHistory } from "@/lib/use-ai-form-history"
+import { SkillImpactList } from "./skill-impact-list"
+import { useCMSStore } from "@/lib/store"
 
 interface Skill {
   id?: number
@@ -39,7 +44,7 @@ interface SkillDialogProps {
 }
 
 export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogProps) {
-  const [formData, setFormData] = useState<Skill>({
+  const { value: formData, setValue: setFormData, applyAi, undoAi, redoAi, canUndo, canRedo } = useAiFormHistory<Skill>({
     name: skill?.name || "",
     category: skill?.category || "Programming",
     level: skill?.level || 50,
@@ -52,13 +57,15 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const duplicate = useCMSStore((state) => state.skills.find((item) => item.id !== skill?.id && item.name === formData.name.trim()))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setLoading(true)
     setError("")
     try {
-      await onSave(formData)
+      await onSave({ ...formData, name: formData.name.trim() })
       onOpenChange(false)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Failed to save skill")
@@ -67,7 +74,7 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
     }
   }
 
-  const categories = ["Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database", "Mobile", "Design"]
+  const categories = ["Languages", "Frontend", "Experience", "Backend", "Data & Content", "Workflow", "Interface Tools", "Programming", "Cloud", "DevOps", "Database", "Mobile", "Design"]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,6 +96,15 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
               placeholder="JavaScript"
               required
             />
+            <AiGenerateDialog kind="skill" title={formData.name} context={{ category: formData.category, level: formData.level, years: formData.years, color: formData.color, icon: formData.icon }} onApply={(draft) => applyAi((current) => {
+              const icon = String(draft.fields.icon).toLowerCase().replace(/\s+/g, "-")
+              return { ...current, category: draft.fields.category as string, level: draft.fields.level as number, years: draft.fields.years as number, color: draft.fields.color as string, icon: (skillIconNames as readonly string[]).includes(icon) ? icon : "code" }
+            })} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
+            {skill && formData.name.trim() !== skill.name && <>
+              {duplicate && <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">“{duplicate.name}” already exists. Saving will merge this skill into it and keep the existing skill’s category, icon, color, and proficiency.</p>}
+              <SkillImpactList name={skill.name} action={duplicate ? "merge" : "rename"} />
+            </>}
+            {!skill && duplicate && <p className="text-sm text-destructive">This skill already exists. Select it instead of creating another.</p>}
           </div>
 
           <div className="space-y-2">
@@ -164,9 +180,9 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || (!skill && Boolean(duplicate))}>
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {skill ? "Update Skill" : "Add Skill"}
+              {skill ? duplicate ? "Merge Skills" : "Update Skill" : "Add Skill"}
             </Button>
           </DialogFooter>
         </form>

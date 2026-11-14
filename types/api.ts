@@ -10,9 +10,9 @@ export type ProjectCategory = "Web Development" | "Mobile App" | "Desktop App" |
 
 export type BlogPostCategory = "Tutorial" | "Opinion" | "Career" | "Tech Review"
 
-export type SkillCategory = "Programming" | "Frontend" | "Backend" | "Cloud" | "DevOps" | "Database" | "Mobile" | "Design"
+export type SkillCategory = string
 
-export type AchievementType = "Certification" | "Award" | "External"
+export type AchievementType = "Certification" | "Award" | "Achievement" | "External"
 
 export type UserRole = "admin" | "editor" | "viewer"
 
@@ -64,6 +64,7 @@ export interface Project {
   githubUrl: string
   liveUrl: string
   image: string
+  mobileImage: string
   createdAt: string
   updatedAt: string
 }
@@ -153,9 +154,12 @@ export type SkillPatch = Partial<SkillInput>
 export interface Achievement {
   id: number
   title: string
+  description?: string | null
   issuer: string
   date: string
   url: string | null
+  image?: string | null
+  logo?: string | null
   type: AchievementType
 }
 
@@ -169,11 +173,15 @@ export type AchievementPatch = Partial<AchievementInput>
 export interface Settings {
   profile: {
     name: string
+    headline?: string
     email: string
+    phone?: string
     bio: string
     location: string
     website: string
     avatar: string
+    languages?: { name: string; proficiency: string }[]
+    resumeSkills?: string[]
     cv?: { url: string; name: string; size: number } | null
   }
   siteConfig: {
@@ -183,6 +191,10 @@ export interface Settings {
     primaryColor: string
     theme: string
     language: string
+    logoText?: string
+    tabTitle?: string
+    heroName?: string
+    faviconPath?: string
   }
   seo: {
     metaTitle: string
@@ -197,6 +209,7 @@ export interface Settings {
     github: string
     linkedin: string
     twitter: string
+    instagram?: string
     email: string
   }
   backup: {

@@ -20,7 +20,9 @@ import { EducationDialog } from "@/components/experience/education-dialog"
 import { SkillDialog } from "@/components/experience/skill-dialog"
 import { AchievementDialog } from "@/components/experience/achievement-dialog"
 import { useCMSStore } from "@/lib/store"
+import { SortableList, SortableCard, SortableTableRow, SortHandle } from "@/components/common/sortable-content"
 import { SkillIcon } from "@/components/experience/skill-icon"
+import { SkillImpactList } from "@/components/experience/skill-impact-list"
 import { jsPDF } from "jspdf"
 import {
   Plus,
@@ -36,7 +38,7 @@ import {
   Download,
 } from "lucide-react"
 
-const skillCategories = ["All", "Programming", "Frontend", "Backend", "Cloud", "DevOps", "Database", "Mobile", "Design"]
+const skillCategories = ["All", "Languages", "Frontend", "Experience", "Backend", "Data & Content", "Workflow", "Interface Tools", "Programming", "Cloud", "DevOps", "Database", "Mobile", "Design"]
 
 function SkillIconPreview({ icon, color }: { icon: string; color: string }) {
   return <SkillIcon name={icon} className="h-4 w-4" style={{ color: color || "#64748b" }} />
@@ -66,6 +68,7 @@ export default function ExperiencePage() {
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSkillCategory, setSelectedSkillCategory] = useState("All")
+  const reorderSkillsEnabled = !searchTerm && selectedSkillCategory === "All"
   const [workDialog, setWorkDialog] = useState<{ open: boolean; experience?: any }>({ open: false })
   const [educationDialog, setEducationDialog] = useState<{ open: boolean; education?: any }>({ open: false })
   const [skillDialog, setSkillDialog] = useState<{ open: boolean; skill?: any }>({ open: false })
@@ -284,6 +287,7 @@ export default function ExperiencePage() {
             <TabsTrigger value="skills">Skills</TabsTrigger>
             <TabsTrigger value="achievements">Achievements</TabsTrigger>
           </TabsList>
+          <p className="text-xs text-muted-foreground">Drag a row or card to set its display order. New content appears first. Clear skill filters before rearranging skills.</p>
 
           {/* Work Experience Tab */}
           <TabsContent value="work" className="space-y-6">
@@ -298,10 +302,12 @@ export default function ExperiencePage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <SortableList resource="workExperience" ids={workExperience.map((item) => item.id)}>
                 <div className="space-y-6">
                   {workExperience.map((exp, index) => (
-                    <div
+                    <SortableCard
                       key={exp.id}
+                      itemId={exp.id}
                       id={`focus-work-${exp.id}`}
                       className={`relative rounded-lg p-2 -m-2 transition-colors ${
                         focused?.type === "work" && focused.id === exp.id
@@ -327,7 +333,7 @@ export default function ExperiencePage() {
                         <div className="min-w-0 flex-1 space-y-3">
                           <div className="flex min-w-0 items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <h3 className="truncate font-semibold text-foreground" title={exp.position}>{exp.position}</h3>
+                              <h3 className="flex items-center gap-1 truncate font-semibold text-foreground" title={exp.position}><SortHandle label={`Drag ${exp.position} to reorder`} />{exp.position}</h3>
                               <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
                                 <Building className="h-4 w-4 shrink-0" />
                                 <span className="truncate" title={exp.company}>{exp.company}</span>
@@ -388,9 +394,10 @@ export default function ExperiencePage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </SortableCard>
                   ))}
                 </div>
+                </SortableList>
               </CardContent>
             </Card>
           </TabsContent>
@@ -408,10 +415,13 @@ export default function ExperiencePage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <SortableList resource="education" ids={education.map((item) => item.id)}>
                 <div className="space-y-6">
+                  {education.length === 0 && <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">No education records in the connected service. Add one here, or run the service demo seed.</p>}
                   {education.map((edu) => (
-                    <div
+                    <SortableCard
                       key={edu.id}
+                      itemId={edu.id}
                       id={`focus-education-${edu.id}`}
                       className={`flex gap-4 p-4 border rounded-lg transition-colors ${
                         focused?.type === "education" && focused.id === edu.id
@@ -425,7 +435,7 @@ export default function ExperiencePage() {
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex min-w-0 items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="truncate font-semibold text-foreground" title={edu.degree}>{edu.degree}</h3>
+                            <h3 className="flex items-center gap-1 truncate font-semibold text-foreground" title={edu.degree}><SortHandle label={`Drag ${edu.degree} to reorder`} />{edu.degree}</h3>
                             <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
                               <Building className="h-4 w-4 shrink-0" />
                               <span className="truncate" title={edu.institution}>{edu.institution}</span>
@@ -481,9 +491,10 @@ export default function ExperiencePage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </SortableCard>
                   ))}
                 </div>
+                </SortableList>
               </CardContent>
             </Card>
           </TabsContent>
@@ -515,10 +526,13 @@ export default function ExperiencePage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <SortableList resource="skills" ids={filteredSkills.map((skill) => skill.id)} enabled={reorderSkillsEnabled} grid>
                 <div className="grid min-w-0 gap-4 md:grid-cols-2">
                   {filteredSkills.map((skill) => (
-                    <div
+                    <SortableCard
                       key={skill.id}
+                      itemId={skill.id}
+                      disabled={!reorderSkillsEnabled}
                       id={`focus-skill-${skill.id}`}
                       className={`min-w-0 space-y-2 rounded-lg border p-4 transition-colors ${
                         focused?.type === "skills" && focused.id === skill.id
@@ -528,7 +542,7 @@ export default function ExperiencePage() {
                     >
                       <div className="flex min-w-0 items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="flex min-w-0 items-center gap-2 font-medium text-foreground"><SkillIconPreview icon={skill.icon} color={skill.color} /><span className="truncate" title={skill.name}>{skill.name}</span></h3>
+                          <h3 className="flex min-w-0 items-center gap-2 font-medium text-foreground"><SortHandle label={`Drag ${skill.name} to reorder`} /><SkillIconPreview icon={skill.icon} color={skill.color} /><span className="truncate" title={skill.name}>{skill.name}</span></h3>
                           <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
                             <Badge variant="outline" className="max-w-[55%] text-xs">
                               <span className="truncate" title={skill.category}>{skill.category}</span>
@@ -550,9 +564,10 @@ export default function ExperiencePage() {
                         </div>
                         <Progress value={skill.level} indicatorColor={skill.color} className="h-2" />
                       </div>
-                    </div>
+                    </SortableCard>
                   ))}
                 </div>
+                </SortableList>
               </CardContent>
             </Card>
           </TabsContent>
@@ -570,6 +585,7 @@ export default function ExperiencePage() {
                 </div>
               </CardHeader>
               <CardContent>
+                <SortableList resource="achievements" ids={achievements.map((item) => item.id)}>
                 <Table className="min-w-[560px] table-fixed">
                   <TableHeader>
                     <TableRow>
@@ -581,21 +597,24 @@ export default function ExperiencePage() {
                   </TableHeader>
                   <TableBody>
                     {achievements.map((achievement) => (
-                      <TableRow
+                      <SortableTableRow
                         key={achievement.id}
+                        itemId={achievement.id}
                         id={`focus-achievement-${achievement.id}`}
-                        className={
-                          focused?.type === "achievement" && focused.id === achievement.id ? "bg-primary/10" : ""
-                        }
+                        className={focused?.type === "achievement" && focused.id === achievement.id ? "bg-primary/10" : ""}
                       >
                         <TableCell>
-                          <div className="min-w-0 space-y-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <SortHandle label={`Drag ${achievement.title} to reorder`} />
+                            <div className="min-w-0 space-y-1">
                             <p className="truncate font-medium text-foreground" title={achievement.title}>{achievement.title}</p>
+                            {achievement.description && <p className="truncate text-xs text-muted-foreground" title={achievement.description}>{achievement.description}</p>}
                             <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
                               <span className="truncate" title={achievement.issuer}>{achievement.issuer}</span>
                               {achievement.url && (
                                 <IconLink href={achievement.url} icon={ExternalLink} label="Open link" />
                               )}
+                            </div>
                             </div>
                           </div>
                         </TableCell>
@@ -613,10 +632,11 @@ export default function ExperiencePage() {
                             }
                           />
                         </TableCell>
-                      </TableRow>
+                      </SortableTableRow>
                     ))}
                   </TableBody>
                 </Table>
+                </SortableList>
               </CardContent>
             </Card>
           </TabsContent>
@@ -657,9 +677,10 @@ export default function ExperiencePage() {
           }}
           title={deleteTarget ? deleteMeta[deleteTarget.type].title : ""}
           description={
-            <>
-              Are you sure you want to delete "{deleteTarget?.title || ""}"? This action cannot be undone.
-            </>
+            <div className="space-y-3">
+              <p>Are you sure you want to delete "{deleteTarget?.title || ""}"? This action cannot be undone.</p>
+              {deleteTarget?.type === "skill" && <SkillImpactList name={deleteTarget.title} action="delete" />}
+            </div>
           }
           confirmLabel={deleteTarget ? deleteMeta[deleteTarget.type].confirmLabel : ""}
           onConfirm={confirmDelete}

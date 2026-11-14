@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
+import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { useAiFormHistory } from "@/lib/use-ai-form-history"
 
 interface BlogPost {
   id?: number
@@ -34,7 +36,7 @@ interface BlogFormDialogProps {
 }
 
 export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDialogProps) {
-  const [formData, setFormData] = useState({
+  const { value: formData, setValue: setFormData, applyAi, undoAi, redoAi, canUndo, canRedo } = useAiFormHistory({
     title: post?.title || "",
     slug: post?.slug || "",
     date: post?.date || "",
@@ -157,6 +159,7 @@ export function BlogFormDialog({ open, onOpenChange, post, onSave }: BlogFormDia
               required
             />
             <p className="text-xs text-muted-foreground">Separate paragraphs with a blank line.</p>
+            <AiGenerateDialog kind="blog" title={formData.title} context={{ currentSlug: formData.slug, currentDate: formData.date, currentDescription: formData.description, currentContent: formData.contentText }} onApply={(draft) => applyAi((current) => ({ ...current, slug: draft.fields.slug as string, date: draft.fields.date as string, description: draft.fields.description as string, contentText: (draft.fields.content as string[]).join("\n\n") }))} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
           </div>
 
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

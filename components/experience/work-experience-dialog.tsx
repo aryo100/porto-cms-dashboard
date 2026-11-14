@@ -18,6 +18,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useCMSStore } from "@/lib/store"
+import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { useAiFormHistory } from "@/lib/use-ai-form-history"
 import { X, Plus, Loader2 } from "lucide-react"
 
 interface WorkExperience {
@@ -41,7 +43,7 @@ interface WorkExperienceDialogProps {
 }
 
 export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }: WorkExperienceDialogProps) {
-  const [formData, setFormData] = useState<WorkExperience>({
+  const { value: formData, setValue: setFormData, applyAi, undoAi, redoAi, canUndo, canRedo } = useAiFormHistory<WorkExperience>({
     company: experience?.company || "",
     position: experience?.position || "",
     location: experience?.location || "",
@@ -182,6 +184,7 @@ export function WorkExperienceDialog({ open, onOpenChange, experience, onSave }:
               rows={4}
               required
             />
+            <AiGenerateDialog kind="work" title={[formData.position, formData.company].filter(Boolean).join(" at ")} context={{ company: formData.company, position: formData.position, location: formData.location, startDate: formData.startDate, endDate: formData.endDate, current: formData.current, technologies: formData.technologies, currentDescription: formData.description, currentAchievements: formData.achievements }} onApply={(draft) => applyAi((current) => ({ ...current, company: draft.fields.company as string, location: draft.fields.location as string, startDate: draft.fields.startDate as string, endDate: (draft.fields.endDate as string | null | undefined) ?? null, current: draft.fields.current as boolean, description: draft.fields.description as string, achievements: draft.fields.bullets as string[], technologies: draft.fields.technologies as string[] }))} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
           </div>
 
           <div className="space-y-2">

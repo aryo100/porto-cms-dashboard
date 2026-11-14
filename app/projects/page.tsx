@@ -17,6 +17,7 @@ import { ConfirmDeleteDialog } from "@/components/common/confirm-delete-dialog"
 import { ProjectFormDialog } from "@/components/projects/project-form-dialog"
 import { useCMSStore } from "@/lib/store"
 import { apiAssetUrl } from "@/lib/api-client"
+import { SortableList, SortableTableRow, SortHandle } from "@/components/common/sortable-content"
 import {
   Plus,
   ArrowUpDown,
@@ -44,7 +45,7 @@ interface Project {
 
 const categories = ["All", "Web Development", "Mobile App", "Desktop App", "API", "Open Source", "Other"]
 const statusOptions = ["All", "Completed", "Upcoming", "Legacy"]
-const sortOptions = ["Newest", "Oldest", "Title A-Z", "Title Z-A"]
+const sortOptions = ["Display order", "Newest", "Oldest", "Title A-Z", "Title Z-A"]
 
 export default function ProjectsPage() {
   const { projects, addProject, updateProject, deleteProject } = useCMSStore()
@@ -52,7 +53,8 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedStatus, setSelectedStatus] = useState("All")
-  const [sortOption, setSortOption] = useState("Newest")
+  const [sortOption, setSortOption] = useState("Display order")
+  const reorderEnabled = sortOption === "Display order" && !searchTerm && selectedCategory === "All" && selectedStatus === "All"
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<any>(undefined)
   const [focusedId, setFocusedId] = useState<number | null>(null)
@@ -110,6 +112,8 @@ export default function ProjectsPage() {
 
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     switch (sortOption) {
+      case "Display order":
+        return projects.indexOf(a) - projects.indexOf(b)
       case "Oldest":
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       case "Title A-Z":
@@ -207,9 +211,11 @@ export default function ProjectsPage() {
                 />
               </div>
             </div>
+            <p className="text-xs text-muted-foreground">{reorderEnabled ? "Drag the handle to change a project's position on the website." : "Choose Display order and clear filters to rearrange rows."}</p>
           </CardHeader>
 
           <CardContent>
+            <SortableList resource="projects" ids={sortedProjects.map((project) => project.id)} enabled={reorderEnabled}>
             <Table className="min-w-[820px] table-fixed">
               <TableHeader>
                 <TableRow>
@@ -223,13 +229,16 @@ export default function ProjectsPage() {
               </TableHeader>
               <TableBody>
                 {sortedProjects.map((project) => (
-                  <TableRow
+                  <SortableTableRow
                     key={project.id}
+                    itemId={project.id}
+                    disabled={!reorderEnabled}
                     id={`project-row-${project.id}`}
                     className={`h-16 ${focusedId === project.id ? "bg-primary/10" : ""}`}
                   >
                     <TableCell>
                       <div className="flex min-w-0 items-center gap-3">
+                        <SortHandle label={`Drag ${project.title} to reorder`} />
                         <div className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                           {project.image != "" ? (
                             <img src={apiAssetUrl(project.image)} alt={`${project.title} image`} className="h-full w-full object-cover" />
@@ -291,10 +300,11 @@ export default function ProjectsPage() {
                         />
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </SortableTableRow>
                 ))}
               </TableBody>
             </Table>
+            </SortableList>
           </CardContent>
         </Card>
 

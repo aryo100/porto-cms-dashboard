@@ -2,9 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -16,13 +17,19 @@ import {
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
+import { apiAssetUrl, apiDeleteUpload, apiUpload } from "@/lib/api-client"
+import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { useAiFormHistory } from "@/lib/use-ai-form-history"
 
 interface Achievement {
   id?: number
   title: string
+  description?: string | null
   issuer: string
   date: string
   url: string | null
+  image?: string | null
+  logo?: string | null
   type: string
 }
 
@@ -34,24 +41,52 @@ interface AchievementDialogProps {
 }
 
 export function AchievementDialog({ open, onOpenChange, achievement, onSave }: AchievementDialogProps) {
-  const [formData, setFormData] = useState<Achievement>({
+  const { value: formData, setValue: setFormData, applyAi, undoAi, redoAi, canUndo, canRedo } = useAiFormHistory<Achievement>({
     title: achievement?.title || "",
+    description: achievement?.description || "",
     issuer: achievement?.issuer || "",
     date: achievement?.date || "",
     url: achievement?.url || "",
+    image: achievement?.image || "",
+    logo: achievement?.logo || "",
     type: achievement?.type || "Certification",
     ...achievement,
   })
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const draftUploads = useRef(new Set<string>())
+
+  useEffect(() => () => {
+    for (const url of draftUploads.current) void apiDeleteUpload(url).catch(() => {})
+  }, [])
+
+  const uploadMedia = async (file: File | undefined, field: "image" | "logo") => {
+    if (!file) return
+    setLoading(true); setError("")
+    try {
+      const uploaded = await apiUpload(file)
+      const previous = formData[field]
+      draftUploads.current.add(uploaded.url)
+      if (previous && draftUploads.current.has(previous)) {
+        await apiDeleteUpload(previous)
+        draftUploads.current.delete(previous)
+      }
+      setFormData((current) => ({ ...current, [field]: uploaded.url }))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Failed to upload media")
+    } finally { setLoading(false) }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.image && !formData.logo) { setError("Add a logo when there is no image."); return }
     setLoading(true)
     setError("")
     try {
-      await onSave({ ...formData, url: formData.url || null })
+      await onSave({ ...formData, url: formData.url || null, image: formData.image || null, logo: formData.logo || null })
+      draftUploads.current.delete(formData.image || "")
+      draftUploads.current.delete(formData.logo || "")
       onOpenChange(false)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Failed to save achievement")
@@ -62,7 +97,7 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{achievement ? "Edit Achievement" : "Add Achievement"}</DialogTitle>
           <DialogDescription>
@@ -80,6 +115,12 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
               placeholder="AWS Certified Solutions Architect"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="achievement-description">Card subtitle</Label>
+            <Textarea id="achievement-description" rows={3} value={formData.description || ""} onChange={(event) => setFormData((previous) => ({ ...previous, description: event.target.value }))} placeholder="What this credential or achievement represents" />
+            <AiGenerateDialog kind="achievement" title={formData.title} context={{ issuer: formData.issuer, date: formData.date, type: formData.type, image: formData.image || "", logo: formData.logo || "", currentDescription: formData.description || "" }} onApply={(draft) => applyAi((current) => ({ ...current, description: draft.fields.description as string, issuer: draft.fields.issuer as string, date: draft.fields.date as string, type: draft.fields.type as string, logo: current.logo || (draft.fields.logo as string | undefined) || "" }))} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
           </div>
 
           <div className="space-y-2">
@@ -103,6 +144,7 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
                 <SelectContent>
                   <SelectItem value="Certification">Certification</SelectItem>
                   <SelectItem value="Award">Award</SelectItem>
+                  <SelectItem value="Achievement">Achievement</SelectItem>
                   <SelectItem value="External">External</SelectItem>
                 </SelectContent>
               </Select>
@@ -130,6 +172,17 @@ export function AchievementDialog({ open, onOpenChange, achievement, onSave }: A
               placeholder="https://credential.net/your-credential"
             />
             <p className="text-xs text-muted-foreground">Link to the credential, article, or external reference.</p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {([ ["image", "Card image (optional)"], ["logo", "Logo (required without image)"] ] as const).map(([field, label]) => <div key={field} className="space-y-2">
+              <Label htmlFor={`achievement-${field}`}>{label}</Label>
+              <Input id={`achievement-${field}`} value={formData[field] || ""} onChange={(e) => setFormData((prev) => ({ ...prev, [field]: e.target.value }))} placeholder={field === "image" ? "/assets/golden-record/photo.gif" : "/voyager/icon.svg"} />
+              <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-2 text-xs hover:bg-muted">Upload {field}<input type="file" accept={field === "logo" ? "image/png,image/webp,image/avif,image/svg+xml" : "image/png,image/jpeg,image/webp,image/avif"} className="hidden" disabled={loading} onChange={(event) => { void uploadMedia(event.target.files?.[0], field); event.target.value = "" }} /></label>
+              {field === "logo" && <p className="text-xs text-muted-foreground">Use a transparent logo. The portfolio tints it gold.</p>}
+              {formData[field] && <p className="truncate text-xs text-muted-foreground" title={formData[field] || ""}>{formData[field]}</p>}
+              {formData[field]?.startsWith("/api/v1/uploads/") && <img src={apiAssetUrl(formData[field] || "")} alt={`${field} preview`} className="h-20 w-full rounded-md border object-contain p-2" />}
+            </div>)}
           </div>
 
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

@@ -15,11 +15,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PageHeader } from "@/components/common/page-header"
 import { AvatarCropDialog } from "@/components/settings/avatar-crop-dialog"
+import { SectionContentFields, sectionContentFields, contentSectionFields, contentTitleFields, type ContentSectionType } from "@/components/settings/section-content-settings"
+import { AiSettings } from "@/components/ai/ai-settings"
+import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { useAiFormHistory } from "@/lib/use-ai-form-history"
 import {
   User,
   Globe,
   Search,
   Palette,
+  Type,
+  Fingerprint,
+  FileText,
   Download,
   Upload,
   Trash2,
@@ -28,44 +35,63 @@ import {
   Github,
   Linkedin,
   Twitter,
+  Instagram,
+  Sparkles,
 } from "lucide-react"
 import { useCMSStore } from "@/lib/store"
-import { apiAssetUrl, apiDeleteUpload, apiUpload } from "@/lib/api-client"
+import { apiAssetUrl, apiDeleteUpload, apiRequest, apiUpload } from "@/lib/api-client"
 
 export default function SettingsPage() {
   const settings = useCMSStore((state) => state.settings)
   const updateSettings = useCMSStore((state) => state.updateSettings)
   const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState("profile")
   const [uploading, setUploading] = useState(false)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const draftUploads = useRef(new Set<string>())
   const [error, setError] = useState("")
   const [message, setMessage] = useState("")
   const [draftReady, setDraftReady] = useState(false)
+  const { value: sectionContentDraft, setValue: setSectionContentDraft, applyAi: applySectionContentAi, undoAi: undoSectionContentAi, redoAi: redoSectionContentAi, resetAi: resetSectionContentAi, canUndo: canUndoSectionContentAi, canRedo: canRedoSectionContentAi } = useAiFormHistory<ContentSectionType | null>(null)
+  const [sectionContentLoading, setSectionContentLoading] = useState(true)
+  const sectionContentRequested = useRef(false)
 
-  const [profileData, setProfileData] = useState({
-    name: "", email: "", bio: "", location: "", website: "", avatar: "", cv: null as { url: string; name: string; size: number } | null,
+  const { value: profileData, setValue: setProfileData, applyAi: applyProfileAi, undoAi: undoProfileAi, redoAi: redoProfileAi, resetAi: resetProfileAi, canUndo: canUndoProfileAi, canRedo: canRedoProfileAi } = useAiFormHistory({
+    name: "", headline: "", email: "", phone: "", bio: "", location: "", website: "", avatar: "", cv: null as { url: string; name: string; size: number } | null,
+  })
+  const [resumeLanguages, setResumeLanguages] = useState("")
+  const [resumeSkills, setResumeSkills] = useState("")
+
+  const { value: siteConfig, setValue: setSiteConfig, applyAi: applySiteAi, undoAi: undoSiteAi, redoAi: redoSiteAi, resetAi: resetSiteAi, canUndo: canUndoSiteAi, canRedo: canRedoSiteAi } = useAiFormHistory({
+    siteTitle: "", tagline: "", description: "", primaryColor: "", theme: "light", language: "en", logoText: "", tabTitle: "", heroName: "", faviconPath: "/voyager/icon.svg",
   })
 
-  const [siteConfig, setSiteConfig] = useState({
-    siteTitle: "", tagline: "", description: "", primaryColor: "", theme: "light", language: "en",
-  })
-
-  const [seoSettings, setSeoSettings] = useState({
+  const { value: seoSettings, setValue: setSeoSettings, applyAi: applySeoAi, undoAi: undoSeoAi, redoAi: redoSeoAi, resetAi: resetSeoAi, canUndo: canUndoSeoAi, canRedo: canRedoSeoAi } = useAiFormHistory({
     metaTitle: "", metaDescription: "", keywords: "", googleAnalytics: "", googleSearchConsole: "", sitemap: false, robots: false,
   })
 
   const [socialLinks, setSocialLinks] = useState({
-    github: "", linkedin: "", twitter: "", email: "",
+    github: "", linkedin: "", twitter: "", instagram: "", email: "",
   })
 
   useEffect(() => {
     if (!settings) return
-    setProfileData({ name: settings.profile?.name ?? "", email: settings.profile?.email ?? "", bio: settings.profile?.bio ?? "", location: settings.profile?.location ?? "", website: settings.profile?.website ?? "", avatar: settings.profile?.avatar ?? "", cv: settings.profile?.cv ?? null })
-    setSiteConfig({ siteTitle: settings.siteConfig?.siteTitle ?? "", tagline: settings.siteConfig?.tagline ?? "", description: settings.siteConfig?.description ?? "", primaryColor: settings.siteConfig?.primaryColor ?? "", theme: settings.siteConfig?.theme ?? "light", language: settings.siteConfig?.language ?? "en" })
+    setProfileData({ name: settings.profile?.name ?? "", headline: settings.profile?.headline ?? "", email: settings.profile?.email ?? "", phone: settings.profile?.phone ?? "", bio: settings.profile?.bio ?? "", location: settings.profile?.location ?? "", website: settings.profile?.website ?? "", avatar: settings.profile?.avatar ?? "", cv: settings.profile?.cv ?? null })
+    setResumeLanguages((settings.profile?.languages ?? []).map((item) => `${item.name}: ${item.proficiency}`).join("\n"))
+    setResumeSkills((settings.profile?.resumeSkills ?? []).join(", "))
+    setSiteConfig({ siteTitle: settings.siteConfig?.siteTitle ?? "", tagline: settings.siteConfig?.tagline ?? "", description: settings.siteConfig?.description ?? "", primaryColor: settings.siteConfig?.primaryColor ?? "", theme: settings.siteConfig?.theme ?? "light", language: settings.siteConfig?.language ?? "en", logoText: settings.siteConfig?.logoText ?? "", tabTitle: settings.siteConfig?.tabTitle ?? "", heroName: settings.siteConfig?.heroName ?? "", faviconPath: settings.siteConfig?.faviconPath ?? "/voyager/icon.svg" })
     setSeoSettings({ metaTitle: settings.seo?.metaTitle ?? "", metaDescription: settings.seo?.metaDescription ?? "", keywords: Array.isArray(settings.seo?.keywords) ? settings.seo.keywords.join(", ") : settings.seo?.keywords ?? "", googleAnalytics: settings.seo?.googleAnalytics ?? "", googleSearchConsole: settings.seo?.googleSearchConsole ?? "", sitemap: String(settings.seo?.sitemap) === "true", robots: String(settings.seo?.robots) === "true" })
-    setSocialLinks({ github: settings.socialLinks?.github ?? "", linkedin: settings.socialLinks?.linkedin ?? "", twitter: settings.socialLinks?.twitter ?? "", email: settings.socialLinks?.email ?? "" })
+    setSocialLinks({ github: settings.socialLinks?.github ?? "", linkedin: settings.socialLinks?.linkedin ?? "", twitter: settings.socialLinks?.twitter ?? "", instagram: settings.socialLinks?.instagram ?? "", email: settings.socialLinks?.email ?? "" })
     setDraftReady(true)
+  }, [settings])
+
+  useEffect(() => {
+    if (!settings || sectionContentRequested.current) return
+    sectionContentRequested.current = true
+    void apiRequest<ContentSectionType>("/content/section-content/editor")
+      .then((value) => setSectionContentDraft(Object.fromEntries(contentSectionFields.map(([key]) => [key, value[key] ?? ""])) as ContentSectionType))
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Unable to load portfolio content"))
+      .finally(() => setSectionContentLoading(false))
   }, [settings])
 
   useEffect(() => () => {
@@ -81,14 +107,19 @@ export default function SettingsPage() {
   }
 
   const saveChanges = async () => {
+    if (!sectionContentDraft) { setError("Portfolio content has not loaded. Reload the page and try again."); return }
     setSaving(true)
     setError("")
     setMessage("")
     try {
-      await updateSettings({ profile: profileData, siteConfig, seo: seoSettings, socialLinks })
+      const languages = resumeLanguages.split("\n").map((line) => line.split(":" ).map((part) => part.trim())).filter((parts) => parts[0] && parts[1]).map(([name, proficiency]) => ({ name, proficiency }))
+      const selectedSkills = resumeSkills.split(",").map((name) => name.trim()).filter(Boolean)
+      await updateSettings({ profile: { ...profileData, languages, resumeSkills: selectedSkills }, siteConfig, seo: seoSettings, socialLinks })
+      await apiRequest("/content/section-content", { method: "PUT", body: JSON.stringify(sectionContentDraft) })
       draftUploads.current.delete(profileData.avatar)
       if (profileData.cv) draftUploads.current.delete(profileData.cv.url)
       await discardDrafts()
+      resetProfileAi(); resetSiteAi(); resetSeoAi(); resetSectionContentAi()
       setMessage("Changes saved successfully")
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Failed to save settings")
@@ -154,7 +185,7 @@ export default function SettingsPage() {
     if (!file) return
     setError("")
     if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
-      setError("CV harus berupa file PDF")
+      setError("CV must be a PDF file")
       return
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -218,20 +249,21 @@ export default function SettingsPage() {
             <Download className="h-4 w-4" />
             Export Data
           </Button>
-          <Button className="gap-2" onClick={saveChanges} disabled={saving || uploading}>
+          {activeTab !== "ai" && <Button className="gap-2" onClick={saveChanges} disabled={saving || uploading || sectionContentLoading || !sectionContentDraft}>
             <Save className="h-4 w-4" />
             Save Changes
-          </Button>
+          </Button>}
         </PageHeader>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {message && <p role="status" className="text-sm text-primary">{message}</p>}
 
         {/* Settings Tabs */}
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="site">Site Config</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
+            <TabsTrigger value="ai">Assistant</TabsTrigger>
           </TabsList>
 
           {/* Profile Settings */}
@@ -296,8 +328,9 @@ export default function SettingsPage() {
                         </Button>
                       </>
                     )}
+                    {!profileData.cv && <a href={apiAssetUrl("/api/v1/settings/cv")} target="_blank" rel="noopener noreferrer" className="text-sm underline underline-offset-4">Download generated CV</a>}
                   </div>
-                  <p className="text-sm text-muted-foreground">PDF, up to 10 MB. Once saved, your CV will be available for download on your portfolio.</p>
+                  <p className="text-sm text-muted-foreground">Upload a PDF (up to 10 MB) to use it as the CV. Without one, the portfolio generates an English CV from your saved profile, skills, experience, education, achievements, and certifications.</p>
                 </div>
 
                 <Separator />
@@ -320,6 +353,14 @@ export default function SettingsPage() {
                       value={profileData.email}
                       onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="headline">Resume Headline</Label>
+                    <Input id="headline" value={profileData.headline} onChange={(e) => setProfileData({ ...profileData, headline: e.target.value })} placeholder="Full Stack Engineer & ERP Consultant" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" type="tel" value={profileData.phone} onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="location">Location</Label>
@@ -350,6 +391,19 @@ export default function SettingsPage() {
                     placeholder="Tell visitors about yourself..."
                   />
                   <p className="text-sm text-muted-foreground">{profileData.bio.length}/500 characters</p>
+                  <AiGenerateDialog kind="site" title={`${profileData.name || "Portfolio"} profile bio`} field="profileBio" context={{ headline: profileData.headline, currentText: profileData.bio }} onApply={(draft) => applyProfileAi((current) => ({ ...current, bio: draft.fields.text as string }))} onUndo={undoProfileAi} onRedo={redoProfileAi} canUndo={canUndoProfileAi} canRedo={canRedoProfileAi} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="resume-skills">Resume Skills</Label>
+                  <Textarea id="resume-skills" rows={3} value={resumeSkills} onChange={(event) => setResumeSkills(event.target.value)} placeholder="JavaScript, TypeScript, React, NestJS" />
+                  <p className="text-sm text-muted-foreground">Comma separated skill names from the Skills page. Leave empty to include every visible skill.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="resume-languages">Resume Languages</Label>
+                  <Textarea id="resume-languages" rows={2} value={resumeLanguages} onChange={(event) => setResumeLanguages(event.target.value)} placeholder={"Indonesian: Native\nEnglish: Intermediate"} />
+                  <p className="text-sm text-muted-foreground">One language and proficiency per line, separated by a colon.</p>
                 </div>
 
                 {/* Social Links */}
@@ -390,6 +444,18 @@ export default function SettingsPage() {
                         value={socialLinks.twitter}
                         onChange={(e) => setSocialLinks({ ...socialLinks, twitter: e.target.value })}
                         placeholder="https://twitter.com/username"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram" className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4" />
+                        Instagram
+                      </Label>
+                      <Input
+                        id="instagram"
+                        value={socialLinks.instagram}
+                        onChange={(e) => setSocialLinks({ ...socialLinks, instagram: e.target.value })}
+                        placeholder="https://instagram.com/username"
                       />
                     </div>
                     <div className="space-y-2">
@@ -437,6 +503,7 @@ export default function SettingsPage() {
                       value={siteConfig.tagline}
                       onChange={(e) => setSiteConfig({ ...siteConfig, tagline: e.target.value })}
                     />
+                    <AiGenerateDialog kind="site" title={siteConfig.siteTitle || "Portfolio tagline"} field="tagline" context={{ currentText: siteConfig.tagline, profileBio: profileData.bio }} onApply={(draft) => applySiteAi((current) => ({ ...current, tagline: draft.fields.text as string }))} onUndo={undoSiteAi} onRedo={redoSiteAi} canUndo={canUndoSiteAi} canRedo={canRedoSiteAi} />
                   </div>
                 </div>
 
@@ -448,6 +515,7 @@ export default function SettingsPage() {
                     value={siteConfig.description}
                     onChange={(e) => setSiteConfig({ ...siteConfig, description: e.target.value })}
                   />
+                  <AiGenerateDialog kind="site" title={siteConfig.siteTitle || "Portfolio"} field="siteDescription" context={{ currentText: siteConfig.description, profileBio: profileData.bio }} onApply={(draft) => applySiteAi((current) => ({ ...current, description: draft.fields.text as string }))} onUndo={undoSiteAi} onRedo={redoSiteAi} canUndo={canUndoSiteAi} canRedo={canRedoSiteAi} />
                 </div>
 
                 <Separator />
@@ -512,8 +580,33 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                <Separator />
+                <section className="space-y-4" aria-labelledby="site-branding-title">
+                  <h3 id="site-branding-title" className="flex items-center gap-2 text-lg font-medium"><Fingerprint className="h-5 w-5" />Site Branding</h3>
+                  <p className="text-sm text-muted-foreground">Set the header logo text, browser tab title and icon, and hero name independently.</p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {([ ["logoText", "Header logo text"], ["tabTitle", "Browser tab title"], ["heroName", "Hero name"], ["faviconPath", "Browser tab icon path"] ] as const).map(([key, label]) => <div key={key} className="space-y-2"><Label htmlFor={key}>{label}</Label><Input id={key} value={siteConfig[key]} onChange={(event) => setSiteConfig({ ...siteConfig, [key]: event.target.value })} /></div>)}
+                  </div>
+                </section>
+
+                <Separator />
+                <section className="space-y-4" aria-labelledby="section-titles-title">
+                  <h3 id="section-titles-title" className="flex items-center gap-2 text-lg font-medium"><Type className="h-5 w-5" />Section Titles</h3>
+                  {sectionContentDraft ? <SectionContentFields value={sectionContentDraft} onChange={setSectionContentDraft} onApplyAi={applySectionContentAi} onUndoAi={undoSectionContentAi} onRedoAi={redoSectionContentAi} canUndoAi={canUndoSectionContentAi} canRedoAi={canRedoSectionContentAi} fields={contentTitleFields} context={{ siteTitle: siteConfig.siteTitle, profileBio: profileData.bio }} /> : <p className="text-sm text-muted-foreground">{sectionContentLoading ? "Loading section titles…" : "Section titles are unavailable."}</p>}
+                </section>
+
+                <Separator />
+                <section className="space-y-4" aria-labelledby="portfolio-content-title">
+                  <h3 id="portfolio-content-title" className="flex items-center gap-2 text-lg font-medium"><FileText className="h-5 w-5" />Portfolio Content</h3>
+                  <p className="text-sm text-muted-foreground">Content for the current portfolio homepage. Projects, skills, experience, and achievements use their CMS records.</p>
+                  {sectionContentDraft ? <SectionContentFields value={sectionContentDraft} onChange={setSectionContentDraft} onApplyAi={applySectionContentAi} onUndoAi={undoSectionContentAi} onRedoAi={redoSectionContentAi} canUndoAi={canUndoSectionContentAi} canRedoAi={canRedoSectionContentAi} fields={sectionContentFields} context={{ siteTitle: siteConfig.siteTitle, profileBio: profileData.bio }} /> : <p className="text-sm text-muted-foreground">{sectionContentLoading ? "Loading portfolio content…" : "Portfolio content is unavailable."}</p>}
+                </section>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-6">
+            <Card><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" />AI Assistant</CardTitle></CardHeader><CardContent><AiSettings /></CardContent></Card>
           </TabsContent>
 
           {/* SEO Settings */}
@@ -550,6 +643,7 @@ export default function SettingsPage() {
                     <p className="text-sm text-muted-foreground">
                       {seoSettings.metaDescription.length}/160 characters (recommended)
                     </p>
+                    <AiGenerateDialog kind="site" title={seoSettings.metaTitle || siteConfig.siteTitle || "Portfolio"} field="metaDescription" context={{ siteDescription: siteConfig.description, profileBio: profileData.bio, currentText: seoSettings.metaDescription }} onApply={(draft) => applySeoAi((current) => ({ ...current, metaDescription: draft.fields.text as string }))} onUndo={undoSeoAi} onRedo={redoSeoAi} canUndo={canUndoSeoAi} canRedo={canRedoSeoAi} />
                   </div>
 
                   <div className="space-y-2">
