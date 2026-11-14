@@ -38,13 +38,15 @@ import {
   Instagram,
   Sparkles,
 } from "lucide-react"
-import { useCMSStore } from "@/lib/store"
+import { allContentKeys, useCMSStore } from "@/lib/store"
 import { apiAssetUrl, apiDeleteUpload, apiRequest, apiUpload } from "@/lib/api-client"
 
 export default function SettingsPage() {
   const settings = useCMSStore((state) => state.settings)
   const updateSettings = useCMSStore((state) => state.updateSettings)
+  const loadResources = useCMSStore((state) => state.loadResources)
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [activeTab, setActiveTab] = useState("profile")
   const [uploading, setUploading] = useState(false)
   const [cropFile, setCropFile] = useState<File | null>(null)
@@ -226,14 +228,23 @@ export default function SettingsPage() {
     setMessage("Click Save Changes to remove the CV from your profile.")
   }
 
-  const exportData = () => {
-    const { projects, blogPosts, workExperience, education, skills, achievements, settings } = useCMSStore.getState()
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ projects, blogPosts, workExperience, education, skills, achievements, settings }, null, 2)], { type: "application/json" }))
-    const anchor = document.createElement("a")
-    anchor.href = url
-    anchor.download = "portfolio-cms-export.json"
-    anchor.click()
-    URL.revokeObjectURL(url)
+  const exportData = async () => {
+    setExporting(true)
+    setError("")
+    try {
+      await loadResources(allContentKeys)
+      const { projects, blogPosts, workExperience, education, skills, achievements, settings } = useCMSStore.getState()
+      const url = URL.createObjectURL(new Blob([JSON.stringify({ projects, blogPosts, workExperience, education, skills, achievements, settings }, null, 2)], { type: "application/json" }))
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = "portfolio-cms-export.json"
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Failed to export data")
+    } finally {
+      setExporting(false)
+    }
   }
 
   if (!draftReady) {
@@ -245,9 +256,9 @@ export default function SettingsPage() {
       <div className="space-y-6">
         {/* Header */}
         <PageHeader title="Settings" description="Manage your profile and site configuration">
-          <Button variant="outline" className="gap-2 bg-transparent" onClick={exportData}>
+          <Button variant="outline" className="gap-2 bg-transparent" onClick={() => void exportData()} disabled={exporting}>
             <Download className="h-4 w-4" />
-            Export Data
+            {exporting ? "Preparing export..." : "Export Data"}
           </Button>
           {activeTab !== "ai" && <Button className="gap-2" onClick={saveChanges} disabled={saving || uploading || sectionContentLoading || !sectionContentDraft}>
             <Save className="h-4 w-4" />

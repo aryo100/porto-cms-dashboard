@@ -19,7 +19,7 @@ import {
   Search,
 } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
-import { useCMSStore } from "@/lib/store"
+import { allContentKeys, useCMSStore } from "@/lib/store"
 
 interface TopNavbarProps {
   onMenuClick: () => void
@@ -50,11 +50,20 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
   const education = useCMSStore((state) => state.education)
   const skills = useCMSStore((state) => state.skills)
   const achievements = useCMSStore((state) => state.achievements)
+  const loadedResources = useCMSStore((state) => state.loadedResources)
+  const loadErrors = useCMSStore((state) => state.loadErrors)
+  const loadResources = useCMSStore((state) => state.loadResources)
 
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
+  const searchError = allContentKeys.map((key) => loadErrors[key]).find(Boolean)
+  const searchPending = allContentKeys.some((key) => !loadedResources[key]) && !searchError
+
+  useEffect(() => {
+    if (query.trim()) void loadResources(allContentKeys).catch(() => {})
+  }, [query, loadResources])
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -203,7 +212,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           {open && query.trim() && (
             <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md">
               {results.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">No results found</p>
+                <p className="p-3 text-sm text-muted-foreground">{searchError || (searchPending ? "Loading search results..." : "No results found")}</p>
               ) : (
                 <div className="p-1">
                   {results.map((item, i) => (

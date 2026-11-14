@@ -11,16 +11,27 @@ type Content = {
   achievements: Achievement[]
 }
 export type ResourceKey = keyof Content
+export type LoadKey = ResourceKey | "settings" | "stats"
+export const allContentKeys: readonly ResourceKey[] = ["projects", "blogPosts", "workExperience", "education", "skills", "achievements"]
+const pageRequirements: Record<string, readonly LoadKey[]> = {
+  "/": ["settings", "stats"],
+  "/projects": ["projects", "skills"],
+  "/blog": ["blogPosts"],
+  "/experience": ["workExperience", "education", "skills", "achievements", "settings"],
+  "/settings": ["settings"],
+}
+export const resourcesForPage = (pathname: string): readonly LoadKey[] => pageRequirements[pathname] ?? []
 type CMSSettings = Pick<Settings, "profile" | "siteConfig" | "seo" | "socialLinks">
+type DashboardStats = { totalProjects: number; completedProjects: number; totalBlogPosts: number; totalSkills: number }
 
 interface CMSStore extends Content {
   settings: CMSSettings | null
+  dashboardStats: DashboardStats | null
   site: { website: string }
   profile: { name: string; email: string }
-  loading: boolean
-  loaded: boolean
-  error: string | null
-  loadAll: () => Promise<void>
+  loadedResources: Partial<Record<LoadKey, boolean>>
+  loadErrors: Partial<Record<LoadKey, string>>
+  loadResources: (keys: readonly LoadKey[]) => Promise<void>
   reset: () => void
   addProject: (value: Partial<Project>) => Promise<void>
   updateProject: (id: number, value: Partial<Project>) => Promise<void>
@@ -98,57 +109,72 @@ function normalize<K extends ResourceKey>(key: K, row: Content[K][number]): Cont
 }
 
 const emptyContent: Content = { projects: [], blogPosts: [], workExperience: [], education: [], skills: [], achievements: [] }
+const pendingLoads = new Map<LoadKey, Promise<void>>()
+let loadGeneration = 0
+
+async function fetchResource(key: LoadKey): Promise<Partial<CMSStore>> {
+  if (key === "settings") {
+    const settings = await apiRequest<CMSSettings>("/settings")
+    return { settings, site: { website: settings.profile?.website ?? "" }, profile: { name: settings.profile?.name ?? "", email: settings.profile?.email ?? "" } }
+  }
+  if (key === "stats") return { dashboardStats: await apiRequest<DashboardStats>("/stats") }
+  if (key === "projects") return { projects: (await apiListAll<Project>(paths.projects, 100)).map(normalizeProject) }
+  if (key === "blogPosts") return { blogPosts: await apiListAll<BlogPost>(paths.blogPosts, 500) }
+  if (key === "workExperience") return { workExperience: (await apiListAll<WorkExperience>(paths.workExperience, 500)).map(normalizeWork) }
+  if (key === "education") return { education: (await apiListAll<Education>(paths.education, 500)).map(normalizeEducation) }
+  if (key === "skills") return { skills: (await apiListAll<Skill>(paths.skills, 500)).map(normalizeSkill) }
+  return { achievements: await apiListAll<Achievement>(paths.achievements, 500) }
+}
 
 async function createItem<K extends ResourceKey>(key: K, value: object): Promise<void> {
   const saved = await apiRequest<Content[K][number]>(paths[key], { method: "POST", body: JSON.stringify(inputFor(key, value)) })
-  useCMSStore.setState((state) => ({ [key]: [normalize(key, saved), ...state[key]] }))
+  useCMSStore.setState((state) => ({ [key]: [normalize(key, saved), ...state[key]], loadedResources: { ...state.loadedResources, stats: false } }))
 }
 
 async function updateItem<K extends ResourceKey>(key: K, id: number, value: object): Promise<void> {
   const saved = await apiRequest<Content[K][number]>(`${paths[key]}/${id}`, { method: "PATCH", body: JSON.stringify(inputFor(key, value)) })
-  useCMSStore.setState((state) => ({ [key]: state[key].map((item) => item.id === id ? normalize(key, saved) : item) }))
+  useCMSStore.setState((state) => ({ [key]: state[key].map((item) => item.id === id ? normalize(key, saved) : item), loadedResources: { ...state.loadedResources, stats: false } }))
 }
 
 async function deleteItem<K extends ResourceKey>(key: K, id: number): Promise<void> {
   await apiRequest(`${paths[key]}/${id}`, { method: "DELETE" })
-  useCMSStore.setState((state) => ({ [key]: state[key].filter((item) => item.id !== id) }))
+  useCMSStore.setState((state) => ({ [key]: state[key].filter((item) => item.id !== id), loadedResources: { ...state.loadedResources, stats: false } }))
 }
 
 export const useCMSStore = create<CMSStore>()((set, get) => ({
   ...emptyContent,
   settings: null,
+  dashboardStats: null,
   site: { website: "" },
   profile: { name: "", email: "" },
-  loading: false,
-  loaded: false,
-  error: null,
-  loadAll: async () => {
-    if (get().loading || get().loaded) return
-    if (typeof window !== "undefined") window.localStorage.removeItem("cms-storage")
-    set({ loading: true, error: null })
-    try {
-      const [projects, blogPosts, workExperience, education, skills, achievements, settings] = await Promise.all([
-        apiListAll<Project>(paths.projects, 100),
-        apiListAll<BlogPost>(paths.blogPosts, 500),
-        apiListAll<WorkExperience>(paths.workExperience, 500),
-        apiListAll<Education>(paths.education, 500),
-        apiListAll<Skill>(paths.skills, 500),
-        apiListAll<Achievement>(paths.achievements, 500),
-        apiRequest<CMSSettings>("/settings"),
-      ])
-      set({
-        projects: projects.map(normalizeProject), blogPosts,
-        workExperience: workExperience.map(normalizeWork), education: education.map(normalizeEducation),
-        skills: skills.map(normalizeSkill), achievements, settings,
-        site: { website: settings.profile?.website ?? "" },
-        profile: { name: settings.profile?.name ?? "", email: settings.profile?.email ?? "" },
-        loaded: true, loading: false,
-      })
-    } catch (error) {
-      set({ loading: false, error: error instanceof Error ? error.message : "Failed to load CMS data" })
-    }
+  loadedResources: {},
+  loadErrors: {},
+  loadResources: async (keys) => {
+    await Promise.all(keys.map((key) => {
+      if (get().loadedResources[key]) return Promise.resolve()
+      const pending = pendingLoads.get(key)
+      if (pending) return pending
+      const generation = loadGeneration
+      set((state) => ({ loadErrors: { ...state.loadErrors, [key]: undefined } }))
+      const request = (async () => {
+        try {
+          const data = await fetchResource(key)
+          if (generation === loadGeneration) set((state) => ({ ...data, loadedResources: { ...state.loadedResources, [key]: true }, loadErrors: { ...state.loadErrors, [key]: undefined } }))
+        } catch (cause) {
+          if (generation === loadGeneration) set((state) => ({ loadErrors: { ...state.loadErrors, [key]: cause instanceof Error ? cause.message : "Failed to load data" } }))
+          throw cause
+        }
+      })()
+      pendingLoads.set(key, request)
+      void request.finally(() => { if (pendingLoads.get(key) === request) pendingLoads.delete(key) }).catch(() => {})
+      return request
+    }))
   },
-  reset: () => set({ ...emptyContent, settings: null, site: { website: "" }, profile: { name: "", email: "" }, loading: false, loaded: false, error: null }),
+  reset: () => {
+    loadGeneration++
+    pendingLoads.clear()
+    set({ ...emptyContent, settings: null, dashboardStats: null, site: { website: "" }, profile: { name: "", email: "" }, loadedResources: {}, loadErrors: {} })
+  },
   addProject: (value) => createItem("projects", value),
   updateProject: (id, value) => updateItem("projects", id, value),
   deleteProject: (id) => deleteItem("projects", id),
@@ -169,6 +195,7 @@ export const useCMSStore = create<CMSStore>()((set, get) => ({
     const saved = normalizeSkill(await apiRequest<Skill>(`${paths.skills}/${id}`, { method: "PATCH", body: JSON.stringify(inputFor("skills", value)) }))
     const replacement = oldName && saved.name !== oldName ? { from: oldName, to: saved.name } : null
     set((state) => ({
+      loadedResources: { ...state.loadedResources, stats: false },
       skills: saved.id === id
         ? state.skills.map((skill) => skill.id === id ? saved : skill)
         : state.skills.some((skill) => skill.id === saved.id)
@@ -185,6 +212,7 @@ export const useCMSStore = create<CMSStore>()((set, get) => ({
     const name = get().skills.find((skill) => skill.id === id)?.name
     await apiRequest(`${paths.skills}/${id}`, { method: "DELETE" })
     set((state) => ({
+      loadedResources: { ...state.loadedResources, stats: false },
       skills: state.skills.filter((skill) => skill.id !== id),
       ...(name ? {
         projects: state.projects.map((project) => ({ ...project, technologies: project.technologies.filter((item) => item !== name) })),
