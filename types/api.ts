@@ -65,6 +65,10 @@ export interface Project {
   liveUrl: string
   image: string
   mobileImage: string
+  galleryImages: string[]
+  mobileGalleryImages: string[]
+  scrollAnimation: boolean | null
+  previewAnimation: "scroll" | "gallery"
   createdAt: string
   updatedAt: string
 }

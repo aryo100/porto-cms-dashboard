@@ -67,7 +67,7 @@ const paths: Record<ResourceKey, string> = {
 }
 
 const fields: Record<ResourceKey, readonly string[]> = {
-  projects: ["title", "description", "status", "category", "tags", "startDate", "endDate", "client", "teamMembers", "technologies", "githubUrl", "liveUrl", "image", "mobileImage"],
+  projects: ["title", "description", "status", "category", "tags", "startDate", "endDate", "client", "teamMembers", "technologies", "githubUrl", "liveUrl", "image", "mobileImage", "galleryImages", "mobileGalleryImages", "scrollAnimation", "previewAnimation"],
   blogPosts: ["title", "slug", "date", "description", "content"],
   workExperience: ["company", "position", "location", "startDate", "endDate", "current", "description", "achievements", "technologies"],
   education: ["institution", "degree", "location", "startDate", "endDate", "gpa", "achievements", "coursework"],
@@ -84,7 +84,7 @@ function inputFor(key: ResourceKey, value: object): Record<string, unknown> {
 }
 
 function normalizeProject(row: Project): Project {
-  return { ...row, description: row.description ?? "", status: row.status ?? "", category: row.category ?? "", tags: row.tags ?? [], client: row.client ?? "", teamMembers: row.teamMembers ?? [], technologies: row.technologies ?? [], githubUrl: row.githubUrl ?? "", liveUrl: row.liveUrl ?? "", image: row.image ?? "", mobileImage: row.mobileImage ?? "", startDate: row.startDate?.slice(0, 10) ?? null, endDate: row.endDate?.slice(0, 10) ?? null }
+  return { ...row, description: row.description ?? "", status: row.status ?? "", category: row.category ?? "", tags: row.tags ?? [], client: row.client ?? "", teamMembers: row.teamMembers ?? [], technologies: row.technologies ?? [], githubUrl: row.githubUrl ?? "", liveUrl: row.liveUrl ?? "", image: row.image ?? "", mobileImage: row.mobileImage ?? "", galleryImages: row.galleryImages ?? [], mobileGalleryImages: row.mobileGalleryImages ?? [], scrollAnimation: row.scrollAnimation ?? null, previewAnimation: row.previewAnimation ?? "scroll", startDate: row.startDate?.slice(0, 10) ?? null, endDate: row.endDate?.slice(0, 10) ?? null }
 }
 function normalizeWork(row: WorkExperience): WorkExperience {
   return { ...row, location: row.location ?? "", description: row.description ?? "", achievements: row.achievements ?? [], technologies: row.technologies ?? [], startDate: row.startDate?.slice(0, 10) ?? "", endDate: row.endDate?.slice(0, 10) ?? null }
