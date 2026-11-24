@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { SkillMultiSelect } from "@/components/common/skill-multi-select"
+import { ContentOptionSelectField } from "@/components/common/content-option-fields"
 import {
   Dialog,
   DialogContent,
@@ -43,8 +44,11 @@ interface Project {
   mobileGalleryImages: string[]
   scrollAnimation: boolean | null
   previewAnimation: "scroll" | "gallery"
-  tags?: string[]
+  desktopAnimation?: ProjectAnimation | null
+  mobileAnimation?: ProjectAnimation | null
 }
+
+type ProjectAnimation = "off" | "scroll" | "fade" | "slide"
 
 interface ProjectFormDialogProps {
   open: boolean
@@ -88,11 +92,10 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
     title: project?.title || "",
     description: project?.description || "",
     status: project?.status || "Completed",
-    category: project?.category || "Web Development",
+    category: project?.category || "",
     techStack: project?.techStack ?? project?.technologies ?? [],
     githubUrl: project?.githubUrl || "",
     liveUrl: project?.liveUrl || "",
-    tags: project?.tags ?? [],
     ...project,
     image: project?.image || project?.galleryImages?.[0] || "",
     galleryImages: project?.image ? project?.galleryImages ?? [] : project?.galleryImages?.slice(1) ?? [],
@@ -100,6 +103,8 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
     mobileGalleryImages: project?.mobileImage ? project?.mobileGalleryImages ?? [] : project?.mobileGalleryImages?.slice(1) ?? [],
     scrollAnimation: project?.scrollAnimation ?? (project ? null : false),
     previewAnimation: project?.previewAnimation ?? "scroll",
+    desktopAnimation: project?.desktopAnimation ?? (project ? null : "off"),
+    mobileAnimation: project?.mobileAnimation ?? (project ? null : "off"),
   })
 
   const [loading, setLoading] = useState(false)
@@ -140,6 +145,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.category.trim()) { setError("Choose or add one project category"); return }
     setSaving(true)
     setLoading(true)
     setError("")
@@ -233,17 +239,23 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
     return /\.jpe?g$/i.test(formData[field]) && dimensions.width === expected.width && dimensions.height === expected.height
   }
 
+  const animationFor = (field: ProjectImageField): ProjectAnimation => {
+    const selected = field === "image" ? formData.desktopAnimation : formData.mobileAnimation
+    if (selected) return selected
+    if (formData.scrollAnimation === true) return formData.previewAnimation === "gallery" ? field === "image" ? "fade" : "slide" : "scroll"
+    if (formData.scrollAnimation === false) return "off"
+    return legacyScrolls(field) ? "scroll" : "off"
+  }
+
   const imageStatus = (field: ProjectImageField) => {
     const dimensions = imageDimensions[formData[field]]
     if (!formData[field] || !dimensions) return null
     const gallery = field === "image" ? formData.galleryImages : formData.mobileGalleryImages
-    const effect = formData.category === "Mobile App" || formData.category === "Desktop App" ? "Slide" : "Fade"
-    const mode = formData.scrollAnimation === true && formData.previewAnimation === "gallery" ? gallery.length ? `${effect} preview` : "Add another image for gallery animation" : formData.scrollAnimation === true ? "Scroll enabled when taller than the preview" : formData.scrollAnimation === false ? "Static cover" : legacyScrolls(field) ? "Scrolling preview (existing setting)" : "Static cover (existing setting)"
+    const animation = animationFor(field)
+    const mode = animation === "fade" || animation === "slide" ? gallery.length ? `${animation === "fade" ? "Fade" : "Slide"} on hover` : "Add another image for this animation" : animation === "scroll" ? "Scrolls on hover when taller than the preview" : "Static cover"
     return `${dimensions.width} × ${dimensions.height} · ${mode}`
   }
 
-  const scrollAnimationChecked = formData.scrollAnimation ?? (legacyScrolls("image") || legacyScrolls("mobileImage"))
-  const appCategory = formData.category === "Mobile App" || formData.category === "Desktop App"
   const savedImages = project ? [project.image, project.mobileImage, ...(project.galleryImages ?? []), ...(project.mobileGalleryImages ?? [])].filter(Boolean) : []
   const currentImages = [formData.image, formData.mobileImage, ...formData.galleryImages, ...formData.mobileGalleryImages].filter(Boolean)
   const hasSavedImageRemoval = savedImages.some((url) => !currentImages.includes(url))
@@ -271,25 +283,7 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Web Development">Web Development</SelectItem>
-                  <SelectItem value="Mobile App">Mobile App</SelectItem>
-                  <SelectItem value="Desktop App">Desktop App</SelectItem>
-                  <SelectItem value="API">API</SelectItem>
-                  <SelectItem value="Open Source">Open Source</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <ContentOptionSelectField kind="project-category" label="Category" value={formData.category} onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))} disabled={loading} />
           </div>
 
           <div className="space-y-2">
@@ -302,17 +296,29 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
               rows={3}
               required
             />
-            <AiGenerateDialog kind="project" title={formData.title} context={{ category: formData.category, technologies: formData.techStack, currentDescription: formData.description }} onApply={(draft) => applyAi((current) => ({ ...current, description: draft.fields.description as string, category: draft.fields.category as string, status: draft.fields.status as string, techStack: draft.fields.technologies as string[], tags: draft.fields.tags as string[] }))} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
+            <AiGenerateDialog kind="project" title={formData.title} context={{ category: formData.category, technologies: formData.techStack, currentDescription: formData.description }} onApply={(draft) => applyAi((current) => ({ ...current, description: draft.fields.description as string, category: draft.fields.category as string, status: draft.fields.status as string, techStack: draft.fields.technologies as string[] }))} onUndo={undoAi} onRedo={redoAi} canUndo={canUndo} canRedo={canRedo} />
           </div>
+
+          <div><h3 className="text-sm font-medium">Project images</h3><p className="text-xs text-muted-foreground">Each preview appears only when its images are uploaded. Animation is set separately for web and mobile.</p></div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {([
-              { field: "image", label: "Project Images", sample: "/samples/porto-project-desktop.jpg", sampleLabel: "Optional sample: Desktop · 800 × 1500 JPG" },
+              { field: "image", label: "Desktop Images", sample: "/samples/porto-project-desktop.jpg", sampleLabel: "Optional sample: Desktop · 800 × 1500 JPG" },
               { field: "mobileImage", label: "Mobile Images (optional)", sample: "/samples/porto-project-mobile.jpg", sampleLabel: "Optional sample: Mobile · 320 × 1600 JPG" },
             ] as const).map(({ field, label, sample, sampleLabel }) => {
               const images = imagesFor(field)
+              const animationKey = field === "image" ? "desktopAnimation" : "mobileAnimation"
+              const animation = animationFor(field)
               return <div key={field} className="space-y-2">
                 <Label htmlFor={`${field}-upload`}>{label}</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Switch id={`${field}-animation`} aria-label={`Enable ${field === "image" ? "web" : "mobile"} animation`} checked={animation !== "off"} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, [animationKey]: checked ? "scroll" : "off" }))} disabled={loading} />
+                  <Label htmlFor={`${field}-animation`}>Animation</Label>
+                  <Select value={animation === "off" ? "scroll" : animation} onValueChange={(value: ProjectAnimation) => setFormData((prev) => ({ ...prev, [animationKey]: value }))} disabled={animation === "off" || loading}>
+                    <SelectTrigger aria-label={`${field === "image" ? "Web" : "Mobile"} animation type`} className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="scroll">Scroll</SelectItem><SelectItem value="fade">Fade</SelectItem><SelectItem value="slide">Slide</SelectItem></SelectContent>
+                  </Select>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={(event) => reorderImages(field, event)}>
                     <SortableContext items={images} strategy={rectSortingStrategy} disabled={loading}>
@@ -348,19 +354,6 @@ export function ProjectFormDialog({ open, onOpenChange, project, onSave }: Proje
                   <SelectItem value="Legacy">Legacy</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="project-preview-animation">Animation</Label>
-              <div className="flex items-center gap-3">
-                <Switch id="project-scroll-animation" aria-label="Enable project animation" checked={scrollAnimationChecked} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, scrollAnimation: checked }))} disabled={loading} />
-                <Select value={formData.previewAnimation} onValueChange={(value: "scroll" | "gallery") => setFormData((prev) => ({ ...prev, previewAnimation: value, scrollAnimation: true }))} disabled={!scrollAnimationChecked || loading}>
-                  <SelectTrigger id="project-preview-animation" className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="scroll">Scroll</SelectItem>
-                    <SelectItem value="gallery">{appCategory ? "Slide" : "Fade"}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </div>
 

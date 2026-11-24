@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { apiListAll, apiRequest } from "@/lib/api-client"
-import type { Achievement, BlogPost, Education, Project, Settings, SettingsPatch, Skill, WorkExperience } from "@/types/api"
+import type { Achievement, BlogPost, ContentOption, ContentOptionKind, Education, Project, Settings, SettingsPatch, Skill, WorkExperience } from "@/types/api"
 
 type Content = {
   projects: Project[]
@@ -11,7 +11,7 @@ type Content = {
   achievements: Achievement[]
 }
 export type ResourceKey = keyof Content
-export type LoadKey = ResourceKey | "settings" | "stats"
+export type LoadKey = ResourceKey | "settings" | "stats" | "contentOptions"
 export const allContentKeys: readonly ResourceKey[] = ["projects", "blogPosts", "workExperience", "education", "skills", "achievements"]
 const pageRequirements: Record<string, readonly LoadKey[]> = {
   "/": ["settings", "stats"],
@@ -25,6 +25,7 @@ type CMSSettings = Pick<Settings, "profile" | "siteConfig" | "seo" | "socialLink
 type DashboardStats = { totalProjects: number; completedProjects: number; totalBlogPosts: number; totalSkills: number }
 
 interface CMSStore extends Content {
+  contentOptions: ContentOption[]
   settings: CMSSettings | null
   dashboardStats: DashboardStats | null
   site: { website: string }
@@ -53,6 +54,9 @@ interface CMSStore extends Content {
   addAchievement: (value: Partial<Achievement>) => Promise<void>
   updateAchievement: (id: number, value: Partial<Achievement>) => Promise<void>
   deleteAchievement: (id: number) => Promise<void>
+  addContentOption: (kind: ContentOptionKind, name: string) => Promise<ContentOption>
+  updateContentOption: (id: number, name: string) => Promise<void>
+  deleteContentOption: (id: number) => Promise<void>
   reorderResource: (key: ResourceKey, draggedId: number, targetId: number) => Promise<void>
   updateSettings: (value: SettingsPatch) => Promise<void>
 }
@@ -67,7 +71,7 @@ const paths: Record<ResourceKey, string> = {
 }
 
 const fields: Record<ResourceKey, readonly string[]> = {
-  projects: ["title", "description", "status", "category", "tags", "startDate", "endDate", "client", "teamMembers", "technologies", "githubUrl", "liveUrl", "image", "mobileImage", "galleryImages", "mobileGalleryImages", "scrollAnimation", "previewAnimation"],
+  projects: ["title", "description", "status", "category", "startDate", "endDate", "client", "technologies", "githubUrl", "liveUrl", "image", "mobileImage", "galleryImages", "mobileGalleryImages", "scrollAnimation", "previewAnimation", "desktopAnimation", "mobileAnimation"],
   blogPosts: ["title", "slug", "date", "description", "content"],
   workExperience: ["company", "position", "location", "startDate", "endDate", "current", "description", "achievements", "technologies"],
   education: ["institution", "degree", "location", "startDate", "endDate", "gpa", "achievements", "coursework"],
@@ -84,7 +88,7 @@ function inputFor(key: ResourceKey, value: object): Record<string, unknown> {
 }
 
 function normalizeProject(row: Project): Project {
-  return { ...row, description: row.description ?? "", status: row.status ?? "", category: row.category ?? "", tags: row.tags ?? [], client: row.client ?? "", teamMembers: row.teamMembers ?? [], technologies: row.technologies ?? [], githubUrl: row.githubUrl ?? "", liveUrl: row.liveUrl ?? "", image: row.image ?? "", mobileImage: row.mobileImage ?? "", galleryImages: row.galleryImages ?? [], mobileGalleryImages: row.mobileGalleryImages ?? [], scrollAnimation: row.scrollAnimation ?? null, previewAnimation: row.previewAnimation ?? "scroll", startDate: row.startDate?.slice(0, 10) ?? null, endDate: row.endDate?.slice(0, 10) ?? null }
+  return { ...row, description: row.description ?? "", status: row.status ?? "", category: row.category ?? "", client: row.client ?? "", technologies: row.technologies ?? [], githubUrl: row.githubUrl ?? "", liveUrl: row.liveUrl ?? "", image: row.image ?? "", mobileImage: row.mobileImage ?? "", galleryImages: row.galleryImages ?? [], mobileGalleryImages: row.mobileGalleryImages ?? [], scrollAnimation: row.scrollAnimation ?? null, previewAnimation: row.previewAnimation ?? "scroll", desktopAnimation: row.desktopAnimation ?? null, mobileAnimation: row.mobileAnimation ?? null, startDate: row.startDate?.slice(0, 10) ?? null, endDate: row.endDate?.slice(0, 10) ?? null }
 }
 function normalizeWork(row: WorkExperience): WorkExperience {
   return { ...row, location: row.location ?? "", description: row.description ?? "", achievements: row.achievements ?? [], technologies: row.technologies ?? [], startDate: row.startDate?.slice(0, 10) ?? "", endDate: row.endDate?.slice(0, 10) ?? null }
@@ -118,6 +122,7 @@ async function fetchResource(key: LoadKey): Promise<Partial<CMSStore>> {
     return { settings, site: { website: settings.profile?.website ?? "" }, profile: { name: settings.profile?.name ?? "", email: settings.profile?.email ?? "" } }
   }
   if (key === "stats") return { dashboardStats: await apiRequest<DashboardStats>("/stats") }
+  if (key === "contentOptions") return { contentOptions: (await apiListAll<Omit<ContentOption, "kind"> & { kind: string }>("/content-options", 500)).filter((item): item is ContentOption => item.kind === "project-category" || item.kind === "skill-category") }
   if (key === "projects") return { projects: (await apiListAll<Project>(paths.projects, 100)).map(normalizeProject) }
   if (key === "blogPosts") return { blogPosts: await apiListAll<BlogPost>(paths.blogPosts, 500) }
   if (key === "workExperience") return { workExperience: (await apiListAll<WorkExperience>(paths.workExperience, 500)).map(normalizeWork) }
@@ -143,6 +148,7 @@ async function deleteItem<K extends ResourceKey>(key: K, id: number): Promise<vo
 
 export const useCMSStore = create<CMSStore>()((set, get) => ({
   ...emptyContent,
+  contentOptions: [],
   settings: null,
   dashboardStats: null,
   site: { website: "" },
@@ -173,7 +179,7 @@ export const useCMSStore = create<CMSStore>()((set, get) => ({
   reset: () => {
     loadGeneration++
     pendingLoads.clear()
-    set({ ...emptyContent, settings: null, dashboardStats: null, site: { website: "" }, profile: { name: "", email: "" }, loadedResources: {}, loadErrors: {} })
+    set({ ...emptyContent, contentOptions: [], settings: null, dashboardStats: null, site: { website: "" }, profile: { name: "", email: "" }, loadedResources: {}, loadErrors: {} })
   },
   addProject: (value) => createItem("projects", value),
   updateProject: (id, value) => updateItem("projects", id, value),
@@ -224,6 +230,19 @@ export const useCMSStore = create<CMSStore>()((set, get) => ({
   addAchievement: (value) => createItem("achievements", value),
   updateAchievement: (id, value) => updateItem("achievements", id, value),
   deleteAchievement: (id) => deleteItem("achievements", id),
+  addContentOption: async (kind, name) => {
+    const saved = await apiRequest<ContentOption>("/content-options", { method: "POST", body: JSON.stringify({ kind, name: name.trim() }) })
+    set((state) => ({ contentOptions: [...state.contentOptions, saved] }))
+    return saved
+  },
+  updateContentOption: async (id, name) => {
+    const saved = await apiRequest<ContentOption>(`/content-options/${id}`, { method: "PATCH", body: JSON.stringify({ name: name.trim() }) })
+    set((state) => ({ contentOptions: state.contentOptions.map((item) => item.id === id ? saved : item) }))
+  },
+  deleteContentOption: async (id) => {
+    await apiRequest(`/content-options/${id}`, { method: "DELETE" })
+    set((state) => ({ contentOptions: state.contentOptions.filter((item) => item.id !== id) }))
+  },
   reorderResource: async (key, draggedId, targetId) => {
     const before = get()[key]
     const from = before.findIndex((item) => item.id === draggedId)

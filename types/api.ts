@@ -6,7 +6,16 @@
 // ---------------------------------------------------------------------------
 
 export type ProjectStatus = "Completed" | "Upcoming" | "Legacy"
-export type ProjectCategory = "Web Development" | "Mobile App" | "Desktop App" | "API" | "Open Source" | "Other"
+export type ProjectCategory = string
+
+export type ContentOptionKind = "project-category" | "skill-category"
+export interface ContentOption {
+  id: number
+  kind: ContentOptionKind
+  name: string
+  createdAt: string
+  updatedAt: string
+}
 
 export type BlogPostCategory = "Tutorial" | "Opinion" | "Career" | "Tech Review"
 
@@ -55,11 +64,9 @@ export interface Project {
   description: string
   status: ProjectStatus
   category: ProjectCategory
-  tags: string[]
   startDate: string | null
   endDate: string | null
   client: string
-  teamMembers: string[]
   technologies: string[]
   githubUrl: string
   liveUrl: string
@@ -69,6 +76,8 @@ export interface Project {
   mobileGalleryImages: string[]
   scrollAnimation: boolean | null
   previewAnimation: "scroll" | "gallery"
+  desktopAnimation?: "off" | "scroll" | "fade" | "slide" | null
+  mobileAnimation?: "off" | "scroll" | "fade" | "slide" | null
   createdAt: string
   updatedAt: string
 }

@@ -18,6 +18,7 @@ import { AvatarCropDialog } from "@/components/settings/avatar-crop-dialog"
 import { SectionContentFields, sectionContentFields, contentSectionFields, contentTitleFields, type ContentSectionType } from "@/components/settings/section-content-settings"
 import { AiSettings } from "@/components/ai/ai-settings"
 import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
+import { ContentOptionsManager } from "@/components/settings/content-options-manager"
 import { useAiFormHistory } from "@/lib/use-ai-form-history"
 import {
   User,
@@ -232,9 +233,9 @@ export default function SettingsPage() {
     setExporting(true)
     setError("")
     try {
-      await loadResources(allContentKeys)
-      const { projects, blogPosts, workExperience, education, skills, achievements, settings } = useCMSStore.getState()
-      const url = URL.createObjectURL(new Blob([JSON.stringify({ projects, blogPosts, workExperience, education, skills, achievements, settings }, null, 2)], { type: "application/json" }))
+      await loadResources([...allContentKeys, "contentOptions"])
+      const { projects, blogPosts, workExperience, education, skills, achievements, contentOptions, settings } = useCMSStore.getState()
+      const url = URL.createObjectURL(new Blob([JSON.stringify({ projects, blogPosts, workExperience, education, skills, achievements, contentOptions, settings }, null, 2)], { type: "application/json" }))
       const anchor = document.createElement("a")
       anchor.href = url
       anchor.download = "portfolio-cms-export.json"
@@ -260,7 +261,7 @@ export default function SettingsPage() {
             <Download className="h-4 w-4" />
             {exporting ? "Preparing export..." : "Export Data"}
           </Button>
-          {activeTab !== "ai" && <Button className="gap-2" onClick={saveChanges} disabled={saving || uploading || sectionContentLoading || !sectionContentDraft}>
+          {activeTab !== "ai" && activeTab !== "options" && <Button className="gap-2" onClick={saveChanges} disabled={saving || uploading || sectionContentLoading || !sectionContentDraft}>
             <Save className="h-4 w-4" />
             Save Changes
           </Button>}
@@ -270,11 +271,12 @@ export default function SettingsPage() {
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-5">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="site">Site Config</TabsTrigger>
             <TabsTrigger value="seo">SEO</TabsTrigger>
             <TabsTrigger value="ai">Assistant</TabsTrigger>
+            <TabsTrigger value="options">Categories</TabsTrigger>
           </TabsList>
 
           {/* Profile Settings */}
@@ -619,6 +621,8 @@ export default function SettingsPage() {
           <TabsContent value="ai" className="space-y-6">
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" />AI Assistant</CardTitle></CardHeader><CardContent><AiSettings /></CardContent></Card>
           </TabsContent>
+
+          <TabsContent value="options"><ContentOptionsManager /></TabsContent>
 
           {/* SEO Settings */}
           <TabsContent value="seo" className="space-y-6">

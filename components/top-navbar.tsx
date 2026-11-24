@@ -73,7 +73,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
     const items: ResultItem[] = []
 
     projects
-      .filter((p) => match(p.title, p.description, p.category, ...(p.tags ?? [])))
+      .filter((p) => match(p.title, p.description, p.category))
       .slice(0, 3)
       .forEach((p) =>
         items.push({

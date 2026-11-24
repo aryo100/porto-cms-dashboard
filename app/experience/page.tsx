@@ -38,7 +38,6 @@ import {
   Download,
 } from "lucide-react"
 
-const skillCategories = ["All", "Languages", "Frontend", "Experience", "Backend", "Data & Content", "Workflow", "Interface Tools", "Programming", "Cloud", "DevOps", "Database", "Mobile", "Design"]
 
 function SkillIconPreview({ icon, color }: { icon: string; color: string }) {
   return <SkillIcon name={icon} className="h-4 w-4" style={{ color: color || "#64748b" }} />
@@ -51,6 +50,8 @@ export default function ExperiencePage() {
     workExperience,
     education,
     skills,
+    contentOptions,
+    loadResources,
     achievements,
     addWorkExperience,
     updateWorkExperience,
@@ -65,6 +66,10 @@ export default function ExperiencePage() {
     updateAchievement,
     deleteAchievement,
   } = useCMSStore()
+
+  const skillCategories = ["All", ...new Set([...contentOptions.filter((item) => item.kind === "skill-category").map((item) => item.name), ...skills.map((item) => item.category)].filter(Boolean))].sort((a, b) => a === "All" ? -1 : b === "All" ? 1 : a.localeCompare(b))
+
+  useEffect(() => { void loadResources(["contentOptions"]).catch(() => {}) }, [loadResources])
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSkillCategory, setSelectedSkillCategory] = useState("All")

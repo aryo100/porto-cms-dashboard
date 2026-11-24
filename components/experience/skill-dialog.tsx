@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 import { SkillIconPicker } from "./skill-icon-picker"
 import { skillIconNames } from "@/lib/skill-icon-names"
@@ -24,6 +23,7 @@ import { AiGenerateDialog } from "@/components/ai/ai-generate-dialog"
 import { useAiFormHistory } from "@/lib/use-ai-form-history"
 import { SkillImpactList } from "./skill-impact-list"
 import { useCMSStore } from "@/lib/store"
+import { ContentOptionSelectField } from "@/components/common/content-option-fields"
 
 interface Skill {
   id?: number
@@ -46,7 +46,7 @@ interface SkillDialogProps {
 export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogProps) {
   const { value: formData, setValue: setFormData, applyAi, undoAi, redoAi, canUndo, canRedo } = useAiFormHistory<Skill>({
     name: skill?.name || "",
-    category: skill?.category || "Programming",
+    category: skill?.category || "",
     level: skill?.level || 50,
     years: skill?.years || 1,
     color: skill?.color || "#64748b",
@@ -62,6 +62,7 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (!formData.category.trim()) { setError("Choose or add one skill category"); return }
     setLoading(true)
     setError("")
     try {
@@ -73,8 +74,6 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
       setLoading(false)
     }
   }
-
-  const categories = ["Languages", "Frontend", "Experience", "Backend", "Data & Content", "Workflow", "Interface Tools", "Programming", "Cloud", "DevOps", "Database", "Mobile", "Design"]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,24 +106,7 @@ export function SkillDialog({ open, onOpenChange, skill, onSave }: SkillDialogPr
             {!skill && duplicate && <p className="text-sm text-destructive">This skill already exists. Select it instead of creating another.</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ContentOptionSelectField kind="skill-category" label="Category" value={formData.category} onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))} disabled={loading} />
 
           <div className="space-y-2">
             <Label>Skill Icon</Label>

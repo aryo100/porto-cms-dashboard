@@ -40,17 +40,17 @@ interface Project {
   image: string
   githubUrl: string
   liveUrl: string | null
-  tags: string[]
 }
 
-const categories = ["All", "Web Development", "Mobile App", "Desktop App", "API", "Open Source", "Other"]
 const statusOptions = ["All", "Completed", "Upcoming", "Legacy"]
 const sortOptions = ["Display order", "Newest", "Oldest", "Title A-Z", "Title Z-A"]
 
 export default function ProjectsPage() {
-  const { projects, addProject, updateProject, deleteProject } = useCMSStore()
+  const { projects, contentOptions, addProject, updateProject, deleteProject, loadResources } = useCMSStore()
+  const categories = ["All", ...new Set([...contentOptions.filter((item) => item.kind === "project-category").map((item) => item.name), ...projects.map((item) => item.category)].filter(Boolean))].sort((a, b) => a === "All" ? -1 : b === "All" ? 1 : a.localeCompare(b))
 
   const [searchTerm, setSearchTerm] = useState("")
+  useEffect(() => { void loadResources(["contentOptions"]).catch(() => {}) }, [loadResources])
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedStatus, setSelectedStatus] = useState("All")
   const [sortOption, setSortOption] = useState("Display order")
@@ -100,7 +100,6 @@ export default function ProjectsPage() {
           project.category,
           project.status,
           project.client,
-          ...(project.tags ?? []),
           ...(project.technologies ?? []),
         ].some((field) => field?.toLowerCase().includes(q))
       : true
